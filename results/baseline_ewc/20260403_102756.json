@@ -1,0 +1,12 @@
+{
+  "baseline": "ewc",
+  "seed": 7,
+  "task_0_accuracy_after_task_0": 0.515625,
+  "task_0_accuracy_after_task_1": 0.515625,
+  "task_1_accuracy_after_task_1": 0.44921875,
+  "forgetting_task_0": 0.0,
+  "mean_training_loss": {
+    "task_0": NaN,
+    "task_1": NaN
+  }
+}

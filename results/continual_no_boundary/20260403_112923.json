@@ -1,0 +1,260 @@
+{
+  "experiment": "no_boundary",
+  "num_seeds": 5,
+  "seeds": [
+    7,
+    8,
+    9,
+    10,
+    11
+  ],
+  "summary": {
+    "task_0_accuracy_final": {
+      "mean": 0.4515625,
+      "std": 0.1768215743076195,
+      "min": 0.1796875,
+      "max": 0.71875,
+      "n": 5
+    },
+    "task_1_accuracy_final": {
+      "mean": 0.53828125,
+      "std": 0.14846628010469246,
+      "min": 0.2890625,
+      "max": 0.74609375,
+      "n": 5
+    },
+    "forgetting_task_0": {
+      "mean": 0.19609375,
+      "std": 0.25196251193754,
+      "min": -0.01953125,
+      "max": 0.671875,
+      "n": 5
+    },
+    "max_structures_seen": {
+      "mean": 12.0,
+      "std": 0.0,
+      "min": 12.0,
+      "max": 12.0,
+      "n": 5
+    },
+    "aggregate_event_counts": {
+      "reinforce": 2945,
+      "branch": 29,
+      "create": 26
+    },
+    "aggregate_total_clones": 0,
+    "aggregate_total_prunes": 0
+  },
+  "runs": [
+    {
+      "seed": 7,
+      "steps": 600,
+      "checkpoint_step": 200,
+      "task_0_accuracy_after_early_stream": 0.4609375,
+      "task_0_accuracy_final": 0.37109375,
+      "task_1_accuracy_final": 0.60546875,
+      "forgetting_task_0": 0.08984375,
+      "event_counts": {
+        "reinforce": 589,
+        "branch": 6,
+        "create": 5
+      },
+      "final_stats": {
+        "n_structures": 12,
+        "avg_tension": 0.416078248471827,
+        "avg_utility": 0.7027499999999999,
+        "total_creates": 11,
+        "total_clones": 0,
+        "total_prunes": 0,
+        "structure_ids": [
+          0,
+          1,
+          2,
+          3,
+          4,
+          5,
+          6,
+          7,
+          8,
+          9,
+          10,
+          11
+        ],
+        "total_steps": 600,
+        "recent_avg_loss": 0.31117414298058343,
+        "recent_avg_surprise": 0.38205
+      },
+      "max_structures_seen": 12,
+      "mean_structures_seen": 11.865,
+      "recent_mean_loss": 0.3060577324266703
+    },
+    {
+      "seed": 8,
+      "steps": 600,
+      "checkpoint_step": 200,
+      "task_0_accuracy_after_early_stream": 0.69921875,
+      "task_0_accuracy_final": 0.71875,
+      "task_1_accuracy_final": 0.2890625,
+      "forgetting_task_0": -0.01953125,
+      "event_counts": {
+        "reinforce": 589,
+        "branch": 6,
+        "create": 5
+      },
+      "final_stats": {
+        "n_structures": 12,
+        "avg_tension": 0.5249207367316536,
+        "avg_utility": 0.5505833333333331,
+        "total_creates": 11,
+        "total_clones": 0,
+        "total_prunes": 0,
+        "structure_ids": [
+          0,
+          1,
+          2,
+          3,
+          4,
+          5,
+          6,
+          7,
+          8,
+          9,
+          10,
+          11
+        ],
+        "total_steps": 600,
+        "recent_avg_loss": 0.37094455351125827,
+        "recent_avg_surprise": 0.440315
+      },
+      "max_structures_seen": 12,
+      "mean_structures_seen": 11.851666666666667,
+      "recent_mean_loss": 0.3418201698806503
+    },
+    {
+      "seed": 9,
+      "steps": 600,
+      "checkpoint_step": 200,
+      "task_0_accuracy_after_early_stream": 0.8515625,
+      "task_0_accuracy_final": 0.1796875,
+      "task_1_accuracy_final": 0.74609375,
+      "forgetting_task_0": 0.671875,
+      "event_counts": {
+        "reinforce": 589,
+        "branch": 5,
+        "create": 6
+      },
+      "final_stats": {
+        "n_structures": 12,
+        "avg_tension": 0.3737599030872569,
+        "avg_utility": 0.7904166666666664,
+        "total_creates": 11,
+        "total_clones": 0,
+        "total_prunes": 0,
+        "structure_ids": [
+          0,
+          1,
+          2,
+          3,
+          4,
+          5,
+          6,
+          7,
+          8,
+          9,
+          10,
+          11
+        ],
+        "total_steps": 600,
+        "recent_avg_loss": 0.35179523759657855,
+        "recent_avg_surprise": 0.35597
+      },
+      "max_structures_seen": 12,
+      "mean_structures_seen": 11.861666666666666,
+      "recent_mean_loss": 0.3149594930919679
+    },
+    {
+      "seed": 10,
+      "steps": 600,
+      "checkpoint_step": 200,
+      "task_0_accuracy_after_early_stream": 0.6953125,
+      "task_0_accuracy_final": 0.47265625,
+      "task_1_accuracy_final": 0.53125,
+      "forgetting_task_0": 0.22265625,
+      "event_counts": {
+        "reinforce": 589,
+        "branch": 7,
+        "create": 4
+      },
+      "final_stats": {
+        "n_structures": 12,
+        "avg_tension": 0.36505855081518845,
+        "avg_utility": 0.5533333333333332,
+        "total_creates": 11,
+        "total_clones": 0,
+        "total_prunes": 0,
+        "structure_ids": [
+          0,
+          1,
+          2,
+          3,
+          4,
+          5,
+          6,
+          7,
+          8,
+          9,
+          10,
+          11
+        ],
+        "total_steps": 600,
+        "recent_avg_loss": 0.27952116616199596,
+        "recent_avg_surprise": 0.41801000000000005
+      },
+      "max_structures_seen": 12,
+      "mean_structures_seen": 11.786666666666667,
+      "recent_mean_loss": 0.2896515002984886
+    },
+    {
+      "seed": 11,
+      "steps": 600,
+      "checkpoint_step": 200,
+      "task_0_accuracy_after_early_stream": 0.53125,
+      "task_0_accuracy_final": 0.515625,
+      "task_1_accuracy_final": 0.51953125,
+      "forgetting_task_0": 0.015625,
+      "event_counts": {
+        "reinforce": 589,
+        "branch": 5,
+        "create": 6
+      },
+      "final_stats": {
+        "n_structures": 12,
+        "avg_tension": 0.5060697882615247,
+        "avg_utility": 0.7648333333333331,
+        "total_creates": 11,
+        "total_clones": 0,
+        "total_prunes": 0,
+        "structure_ids": [
+          0,
+          1,
+          2,
+          3,
+          4,
+          5,
+          6,
+          7,
+          8,
+          9,
+          10,
+          11
+        ],
+        "total_steps": 600,
+        "recent_avg_loss": 0.2734520188917511,
+        "recent_avg_surprise": 0.26661999999999997
+      },
+      "max_structures_seen": 12,
+      "mean_structures_seen": 11.83,
+      "recent_mean_loss": 0.2861190901589854
+    }
+  ]
+}

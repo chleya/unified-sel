@@ -1,0 +1,25 @@
+# HuggingFace model cache — too large for git
+topomem/data/models/hf_cache/
+topomem/data/models/xet/
+
+# GGUF model files — download from source instead
+topomem/data/models/*.gguf
+
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+*.egg
+
+# Test artifacts
+topomem/benchmarks/results/*.json
+.pytest_cache/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Temporary
+*.tmp
+*.log
+F:/tmp/

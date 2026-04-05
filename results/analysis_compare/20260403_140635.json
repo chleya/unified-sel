@@ -1,0 +1,243 @@
+{
+  "config": {
+    "fixed_result_path": null,
+    "ewc_result_path": null,
+    "unified_result_path": null,
+    "baseline_label_fixed": "fixed",
+    "baseline_label_ewc": "ewc",
+    "unified_label": "unified_sel"
+  },
+  "sources": {
+    "fixed": [
+      "F:\\unified-sel\\results\\baseline_fixed\\20260403_102846.json"
+    ],
+    "ewc": [
+      "F:\\unified-sel\\results\\baseline_ewc\\20260403_102846.json"
+    ],
+    "unified_sel": [
+      "F:\\unified-sel\\results\\continual_no_boundary\\20260403_140625.json"
+    ]
+  },
+  "metrics": {
+    "fixed": {
+      "avg_accuracy": {
+        "mean": 0.484375,
+        "std": 0.0,
+        "min": 0.484375,
+        "max": 0.484375,
+        "n": 1
+      },
+      "task_0_final_accuracy": {
+        "mean": 0.0625,
+        "std": 0.0,
+        "min": 0.0625,
+        "max": 0.0625,
+        "n": 1
+      },
+      "task_1_final_accuracy": {
+        "mean": 0.90625,
+        "std": 0.0,
+        "min": 0.90625,
+        "max": 0.90625,
+        "n": 1
+      },
+      "forgetting_task_0": {
+        "mean": 0.83203125,
+        "std": 0.0,
+        "min": 0.83203125,
+        "max": 0.83203125,
+        "n": 1
+      }
+    },
+    "ewc": {
+      "avg_accuracy": {
+        "mean": 0.501953125,
+        "std": 0.0,
+        "min": 0.501953125,
+        "max": 0.501953125,
+        "n": 1
+      },
+      "task_0_final_accuracy": {
+        "mean": 0.81640625,
+        "std": 0.0,
+        "min": 0.81640625,
+        "max": 0.81640625,
+        "n": 1
+      },
+      "task_1_final_accuracy": {
+        "mean": 0.1875,
+        "std": 0.0,
+        "min": 0.1875,
+        "max": 0.1875,
+        "n": 1
+      },
+      "forgetting_task_0": {
+        "mean": 0.078125,
+        "std": 0.0,
+        "min": 0.078125,
+        "max": 0.078125,
+        "n": 1
+      }
+    },
+    "unified_sel": {
+      "avg_accuracy": {
+        "mean": 0.512890625,
+        "std": 0.014224329262525877,
+        "min": 0.48828125,
+        "max": 0.52734375,
+        "n": 5,
+        "ci95_low": 0.5015625,
+        "ci95_high": 0.523828125
+      },
+      "task_0_final_accuracy": {
+        "mean": 0.50234375,
+        "std": 0.06407202673066462,
+        "min": 0.40625,
+        "max": 0.59765625,
+        "n": 5,
+        "ci95_low": 0.45078125,
+        "ci95_high": 0.559375
+      },
+      "task_1_final_accuracy": {
+        "mean": 0.5234375,
+        "std": 0.04398652581331015,
+        "min": 0.45703125,
+        "max": 0.57421875,
+        "n": 5,
+        "ci95_low": 0.4875,
+        "ci95_high": 0.559375
+      },
+      "forgetting_task_0": {
+        "mean": 0.1265625,
+        "std": 0.18100063665288585,
+        "min": -0.08203125,
+        "max": 0.33984375,
+        "n": 5,
+        "ci95_low": -0.0328125,
+        "ci95_high": 0.2859375
+      },
+      "max_structures_seen": {
+        "mean": 12.0,
+        "std": 0.0,
+        "min": 12.0,
+        "max": 12.0,
+        "n": 5,
+        "ci95_low": 12.0,
+        "ci95_high": 12.0
+      },
+      "recent_mean_loss": {
+        "mean": 0.284837295036852,
+        "std": 0.014101593299458624,
+        "min": 0.265965500532328,
+        "max": 0.3022207398781932,
+        "n": 5,
+        "ci95_low": 0.27248685839156134,
+        "ci95_high": 0.29609969878787595
+      },
+      "recent_mean_surprise": {
+        "mean": 0.38992,
+        "std": 0.0844452848298826,
+        "min": 0.26712,
+        "max": 0.49440999999999996,
+        "n": 5,
+        "ci95_low": 0.31640500000000005,
+        "ci95_high": 0.46272900000000006
+      }
+    }
+  },
+  "headline": {
+    "avg_accuracy": {
+      "fixed": 0.484375,
+      "ewc": 0.501953125,
+      "unified_sel": 0.512890625
+    },
+    "forgetting_task_0": {
+      "fixed": 0.83203125,
+      "ewc": 0.078125,
+      "unified_sel": 0.1265625
+    },
+    "preliminary_decision": {
+      "unified_beats_ewc_on_avg_accuracy": true,
+      "unified_beats_ewc_on_forgetting": false
+    }
+  },
+  "goal_report": {
+    "avg_accuracy_vs_ewc": {
+      "status": "pass",
+      "higher_is_better": true,
+      "unified_mean": 0.512890625,
+      "reference_mean": 0.501953125,
+      "delta_mean": 0.010937500000000044,
+      "delta_ci95_low": -0.0003906249999999778,
+      "delta_ci95_high": 0.021874999999999978,
+      "p_value": null,
+      "effect_size_cohen_d": null,
+      "direction_ok": true,
+      "statistically_supported": false,
+      "unified_n": 5,
+      "reference_n": 1,
+      "method": "bootstrap_delta_ci"
+    },
+    "forgetting_vs_ewc": {
+      "status": "fail",
+      "higher_is_better": false,
+      "unified_mean": 0.1265625,
+      "reference_mean": 0.078125,
+      "delta_mean": 0.048437499999999994,
+      "delta_ci95_low": -0.1109375,
+      "delta_ci95_high": 0.2078125,
+      "p_value": null,
+      "effect_size_cohen_d": null,
+      "direction_ok": false,
+      "statistically_supported": false,
+      "unified_n": 5,
+      "reference_n": 1,
+      "method": "bootstrap_delta_ci"
+    },
+    "statistical_significance": {
+      "avg_accuracy": {
+        "unified_mean": 0.512890625,
+        "reference_mean": 0.501953125,
+        "delta_mean": 0.010937500000000044,
+        "delta_ci95_low": -0.0003906249999999778,
+        "delta_ci95_high": 0.021874999999999978,
+        "p_value": null,
+        "effect_size_cohen_d": null,
+        "direction_ok": true,
+        "statistically_supported": false,
+        "unified_n": 5,
+        "reference_n": 1,
+        "method": "bootstrap_delta_ci"
+      },
+      "forgetting": {
+        "unified_mean": 0.1265625,
+        "reference_mean": 0.078125,
+        "delta_mean": 0.048437499999999994,
+        "delta_ci95_low": -0.1109375,
+        "delta_ci95_high": 0.2078125,
+        "p_value": null,
+        "effect_size_cohen_d": null,
+        "direction_ok": false,
+        "statistically_supported": false,
+        "unified_n": 5,
+        "reference_n": 1,
+        "method": "bootstrap_delta_ci"
+      },
+      "status": "fail"
+    },
+    "overall": "partial_pass"
+  },
+  "analysis": {
+    "unified_avg_accuracy_minus_ewc": 0.010937500000000044,
+    "unified_forgetting_minus_ewc": 0.048437499999999994,
+    "unified_max_structures_seen_mean": 12.0,
+    "accuracy_sample_sizes": {
+      "unified_sel": 5,
+      "ewc": 1
+    },
+    "forgetting_sample_sizes": {
+      "unified_sel": 5,
+      "ewc": 1
+    }
+  }
+}

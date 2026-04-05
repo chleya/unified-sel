@@ -1,0 +1,154 @@
+{
+  "sources": {
+    "fixed": [
+      "F:\\unified-sel\\results\\baseline_fixed\\20260403_102846.json"
+    ],
+    "ewc": [
+      "F:\\unified-sel\\results\\baseline_ewc\\20260403_102846.json"
+    ],
+    "unified_sel": [
+      "F:\\unified-sel\\results\\continual_no_boundary\\20260403_125027.json"
+    ]
+  },
+  "metrics": {
+    "fixed": {
+      "task_0_final_accuracy": {
+        "mean": 0.0625,
+        "std": 0.0,
+        "min": 0.0625,
+        "max": 0.0625,
+        "n": 1
+      },
+      "task_1_final_accuracy": {
+        "mean": 0.90625,
+        "std": 0.0,
+        "min": 0.90625,
+        "max": 0.90625,
+        "n": 1
+      },
+      "forgetting_task_0": {
+        "mean": 0.83203125,
+        "std": 0.0,
+        "min": 0.83203125,
+        "max": 0.83203125,
+        "n": 1
+      }
+    },
+    "ewc": {
+      "task_0_final_accuracy": {
+        "mean": 0.81640625,
+        "std": 0.0,
+        "min": 0.81640625,
+        "max": 0.81640625,
+        "n": 1
+      },
+      "task_1_final_accuracy": {
+        "mean": 0.1875,
+        "std": 0.0,
+        "min": 0.1875,
+        "max": 0.1875,
+        "n": 1
+      },
+      "forgetting_task_0": {
+        "mean": 0.078125,
+        "std": 0.0,
+        "min": 0.078125,
+        "max": 0.078125,
+        "n": 1
+      }
+    },
+    "unified_sel": {
+      "task_0_final_accuracy": {
+        "mean": 0.55859375,
+        "std": 0.0729538595620547,
+        "min": 0.47265625,
+        "max": 0.69140625,
+        "n": 5,
+        "ci95_low": 0.49765625,
+        "ci95_high": 0.62734375
+      },
+      "task_1_final_accuracy": {
+        "mean": 0.43671875,
+        "std": 0.10403833240385488,
+        "min": 0.25,
+        "max": 0.546875,
+        "n": 5,
+        "ci95_low": 0.34140625,
+        "ci95_high": 0.51640625
+      },
+      "forgetting_task_0": {
+        "mean": 0.18828125,
+        "std": 0.175414548062226,
+        "min": -0.01171875,
+        "max": 0.41796875,
+        "n": 5,
+        "ci95_low": 0.0390625,
+        "ci95_high": 0.3390625
+      },
+      "max_structures_seen": {
+        "mean": 12.0,
+        "std": 0.0,
+        "min": 12.0,
+        "max": 12.0,
+        "n": 5,
+        "ci95_low": 12.0,
+        "ci95_high": 12.0
+      },
+      "recent_mean_loss": {
+        "mean": 0.3133401645473778,
+        "std": 0.03160692582580535,
+        "min": 0.28525664945904333,
+        "max": 0.3691318628061255,
+        "n": 5,
+        "ci95_low": 0.2891310460216622,
+        "ci95_high": 0.3440577786772885
+      },
+      "recent_mean_surprise": {
+        "mean": 0.35537300000000005,
+        "std": 0.0418845497289872,
+        "min": 0.30680500000000005,
+        "max": 0.41952000000000006,
+        "n": 5,
+        "ci95_low": 0.32086899999999996,
+        "ci95_high": 0.39607400000000004
+      }
+    }
+  },
+  "headline": {
+    "avg_accuracy": {
+      "fixed": 0.484375,
+      "ewc": 0.501953125,
+      "unified_sel": 0.49765625
+    },
+    "forgetting_task_0": {
+      "fixed": 0.83203125,
+      "ewc": 0.078125,
+      "unified_sel": 0.18828125
+    },
+    "preliminary_decision": {
+      "unified_beats_ewc_on_avg_accuracy": false,
+      "unified_beats_ewc_on_forgetting": false
+    }
+  },
+  "goal_report": {
+    "avg_accuracy_vs_ewc": {
+      "status": "fail",
+      "gap": -0.004296874999999978
+    },
+    "forgetting_vs_ewc": {
+      "status": "fail",
+      "gap": 0.11015625000000001
+    },
+    "statistical_significance": {
+      "avg_accuracy_p_value": 1.0,
+      "forgetting_p_value": null,
+      "status": "fail"
+    },
+    "overall": "fail"
+  },
+  "analysis": {
+    "unified_avg_accuracy_minus_ewc": -0.004296874999999978,
+    "unified_forgetting_minus_ewc": 0.11015625000000001,
+    "unified_max_structures_seen_mean": 12.0
+  }
+}

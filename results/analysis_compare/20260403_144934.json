@@ -1,0 +1,243 @@
+{
+  "config": {
+    "fixed_result_path": null,
+    "ewc_result_path": null,
+    "unified_result_path": null,
+    "baseline_label_fixed": "fixed",
+    "baseline_label_ewc": "ewc",
+    "unified_label": "unified_sel"
+  },
+  "sources": {
+    "fixed": [
+      "results\\baseline_fixed\\20260403_102846.json"
+    ],
+    "ewc": [
+      "results\\baseline_ewc\\20260403_102846.json"
+    ],
+    "unified_sel": [
+      "F:\\unified-sel\\results\\continual_no_boundary\\20260403_144915.json"
+    ]
+  },
+  "metrics": {
+    "fixed": {
+      "avg_accuracy": {
+        "mean": 0.484375,
+        "std": 0.0,
+        "min": 0.484375,
+        "max": 0.484375,
+        "n": 1
+      },
+      "task_0_final_accuracy": {
+        "mean": 0.0625,
+        "std": 0.0,
+        "min": 0.0625,
+        "max": 0.0625,
+        "n": 1
+      },
+      "task_1_final_accuracy": {
+        "mean": 0.90625,
+        "std": 0.0,
+        "min": 0.90625,
+        "max": 0.90625,
+        "n": 1
+      },
+      "forgetting_task_0": {
+        "mean": 0.83203125,
+        "std": 0.0,
+        "min": 0.83203125,
+        "max": 0.83203125,
+        "n": 1
+      }
+    },
+    "ewc": {
+      "avg_accuracy": {
+        "mean": 0.501953125,
+        "std": 0.0,
+        "min": 0.501953125,
+        "max": 0.501953125,
+        "n": 1
+      },
+      "task_0_final_accuracy": {
+        "mean": 0.81640625,
+        "std": 0.0,
+        "min": 0.81640625,
+        "max": 0.81640625,
+        "n": 1
+      },
+      "task_1_final_accuracy": {
+        "mean": 0.1875,
+        "std": 0.0,
+        "min": 0.1875,
+        "max": 0.1875,
+        "n": 1
+      },
+      "forgetting_task_0": {
+        "mean": 0.078125,
+        "std": 0.0,
+        "min": 0.078125,
+        "max": 0.078125,
+        "n": 1
+      }
+    },
+    "unified_sel": {
+      "avg_accuracy": {
+        "mean": 0.50390625,
+        "std": 0.012536567606157198,
+        "min": 0.484375,
+        "max": 0.5234375,
+        "n": 5,
+        "ci95_low": 0.492578125,
+        "ci95_high": 0.51484375
+      },
+      "task_0_final_accuracy": {
+        "mean": 0.59140625,
+        "std": 0.08467106620992203,
+        "min": 0.48046875,
+        "max": 0.71875,
+        "n": 5,
+        "ci95_low": 0.51953125,
+        "ci95_high": 0.6625
+      },
+      "task_1_final_accuracy": {
+        "mean": 0.41640625,
+        "std": 0.09659106575856279,
+        "min": 0.25,
+        "max": 0.53515625,
+        "n": 5,
+        "ci95_low": 0.32890625,
+        "ci95_high": 0.49453125
+      },
+      "forgetting_task_0": {
+        "mean": 0.02734375,
+        "std": 0.12896542202514982,
+        "min": -0.0859375,
+        "max": 0.26953125,
+        "n": 5,
+        "ci95_low": -0.06484375,
+        "ci95_high": 0.15
+      },
+      "max_structures_seen": {
+        "mean": 12.0,
+        "std": 0.0,
+        "min": 12.0,
+        "max": 12.0,
+        "n": 5,
+        "ci95_low": 12.0,
+        "ci95_high": 12.0
+      },
+      "recent_mean_loss": {
+        "mean": 0.2972022744260116,
+        "std": 0.021942545336449733,
+        "min": 0.2676066475128005,
+        "max": 0.33549040138375036,
+        "n": 5,
+        "ci95_low": 0.2798411539549164,
+        "ci95_high": 0.3182311348922876
+      },
+      "recent_mean_surprise": {
+        "mean": 0.36820899999999995,
+        "std": 0.07147204197446716,
+        "min": 0.26356,
+        "max": 0.4621599999999999,
+        "n": 5,
+        "ci95_low": 0.302286,
+        "ci95_high": 0.42781899999999995
+      }
+    }
+  },
+  "headline": {
+    "avg_accuracy": {
+      "fixed": 0.484375,
+      "ewc": 0.501953125,
+      "unified_sel": 0.50390625
+    },
+    "forgetting_task_0": {
+      "fixed": 0.83203125,
+      "ewc": 0.078125,
+      "unified_sel": 0.02734375
+    },
+    "preliminary_decision": {
+      "unified_beats_ewc_on_avg_accuracy": true,
+      "unified_beats_ewc_on_forgetting": true
+    }
+  },
+  "goal_report": {
+    "avg_accuracy_vs_ewc": {
+      "status": "pass",
+      "higher_is_better": true,
+      "unified_mean": 0.50390625,
+      "reference_mean": 0.501953125,
+      "delta_mean": 0.001953125,
+      "delta_ci95_low": -0.009375000000000022,
+      "delta_ci95_high": 0.012890625000000044,
+      "p_value": null,
+      "effect_size_cohen_d": null,
+      "direction_ok": true,
+      "statistically_supported": false,
+      "unified_n": 5,
+      "reference_n": 1,
+      "method": "bootstrap_delta_ci"
+    },
+    "forgetting_vs_ewc": {
+      "status": "pass",
+      "higher_is_better": false,
+      "unified_mean": 0.02734375,
+      "reference_mean": 0.078125,
+      "delta_mean": -0.05078125,
+      "delta_ci95_low": -0.14296875,
+      "delta_ci95_high": 0.071875,
+      "p_value": null,
+      "effect_size_cohen_d": null,
+      "direction_ok": true,
+      "statistically_supported": false,
+      "unified_n": 5,
+      "reference_n": 1,
+      "method": "bootstrap_delta_ci"
+    },
+    "statistical_significance": {
+      "avg_accuracy": {
+        "unified_mean": 0.50390625,
+        "reference_mean": 0.501953125,
+        "delta_mean": 0.001953125,
+        "delta_ci95_low": -0.009375000000000022,
+        "delta_ci95_high": 0.012890625000000044,
+        "p_value": null,
+        "effect_size_cohen_d": null,
+        "direction_ok": true,
+        "statistically_supported": false,
+        "unified_n": 5,
+        "reference_n": 1,
+        "method": "bootstrap_delta_ci"
+      },
+      "forgetting": {
+        "unified_mean": 0.02734375,
+        "reference_mean": 0.078125,
+        "delta_mean": -0.05078125,
+        "delta_ci95_low": -0.14296875,
+        "delta_ci95_high": 0.071875,
+        "p_value": null,
+        "effect_size_cohen_d": null,
+        "direction_ok": true,
+        "statistically_supported": false,
+        "unified_n": 5,
+        "reference_n": 1,
+        "method": "bootstrap_delta_ci"
+      },
+      "status": "fail"
+    },
+    "overall": "pass"
+  },
+  "analysis": {
+    "unified_avg_accuracy_minus_ewc": 0.001953125,
+    "unified_forgetting_minus_ewc": -0.05078125,
+    "unified_max_structures_seen_mean": 12.0,
+    "accuracy_sample_sizes": {
+      "unified_sel": 5,
+      "ewc": 1
+    },
+    "forgetting_sample_sizes": {
+      "unified_sel": 5,
+      "ewc": 1
+    }
+  }
+}

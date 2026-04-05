@@ -1,0 +1,131 @@
+{
+  "experiment": "no_boundary",
+  "num_seeds": 2,
+  "seeds": [
+    7,
+    8
+  ],
+  "summary": {
+    "task_0_accuracy_final": {
+      "mean": 0.560546875,
+      "std": 0.087890625,
+      "min": 0.47265625,
+      "max": 0.6484375,
+      "n": 2
+    },
+    "task_1_accuracy_final": {
+      "mean": 0.416015625,
+      "std": 0.076171875,
+      "min": 0.33984375,
+      "max": 0.4921875,
+      "n": 2
+    },
+    "forgetting_task_0": {
+      "mean": 0.0859375,
+      "std": 0.08203125,
+      "min": 0.00390625,
+      "max": 0.16796875,
+      "n": 2
+    },
+    "max_structures_seen": {
+      "mean": 12.0,
+      "std": 0.0,
+      "min": 12.0,
+      "max": 12.0,
+      "n": 2
+    },
+    "aggregate_event_counts": {
+      "reinforce": 1178,
+      "branch": 10,
+      "create": 12
+    },
+    "aggregate_total_clones": 1,
+    "aggregate_total_prunes": 1
+  },
+  "runs": [
+    {
+      "seed": 7,
+      "steps": 600,
+      "checkpoint_step": 200,
+      "task_0_accuracy_after_early_stream": 0.4765625,
+      "task_0_accuracy_final": 0.47265625,
+      "task_1_accuracy_final": 0.4921875,
+      "forgetting_task_0": 0.00390625,
+      "event_counts": {
+        "reinforce": 589,
+        "branch": 5,
+        "create": 6
+      },
+      "final_stats": {
+        "n_structures": 12,
+        "avg_tension": 0.497847653503705,
+        "avg_utility": 0.6877499999999998,
+        "total_creates": 11,
+        "total_clones": 1,
+        "total_prunes": 1,
+        "structure_ids": [
+          0,
+          1,
+          2,
+          3,
+          4,
+          6,
+          7,
+          8,
+          9,
+          10,
+          11,
+          12
+        ],
+        "total_steps": 600,
+        "recent_avg_loss": 0.32807931960139913,
+        "recent_avg_surprise": 0.27861500000000006
+      },
+      "max_structures_seen": 12,
+      "mean_structures_seen": 11.881666666666666,
+      "recent_mean_loss": 0.3128158137795667
+    },
+    {
+      "seed": 8,
+      "steps": 600,
+      "checkpoint_step": 200,
+      "task_0_accuracy_after_early_stream": 0.81640625,
+      "task_0_accuracy_final": 0.6484375,
+      "task_1_accuracy_final": 0.33984375,
+      "forgetting_task_0": 0.16796875,
+      "event_counts": {
+        "reinforce": 589,
+        "branch": 5,
+        "create": 6
+      },
+      "final_stats": {
+        "n_structures": 12,
+        "avg_tension": 0.41833668037234734,
+        "avg_utility": 0.5245833333333331,
+        "total_creates": 11,
+        "total_clones": 0,
+        "total_prunes": 0,
+        "structure_ids": [
+          0,
+          1,
+          2,
+          3,
+          4,
+          5,
+          6,
+          7,
+          8,
+          9,
+          10,
+          11
+        ],
+        "total_steps": 600,
+        "recent_avg_loss": 0.2624789890260903,
+        "recent_avg_surprise": 0.4290649999999999
+      },
+      "max_structures_seen": 12,
+      "mean_structures_seen": 11.86,
+      "recent_mean_loss": 0.3101936062607941
+    }
+  ]
+}

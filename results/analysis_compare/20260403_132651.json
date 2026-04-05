@@ -1,0 +1,235 @@
+{
+  "sources": {
+    "fixed": [
+      "F:\\unified-sel\\results\\baseline_fixed\\20260403_102846.json"
+    ],
+    "ewc": [
+      "F:\\unified-sel\\results\\baseline_ewc\\20260403_102846.json"
+    ],
+    "unified_sel": [
+      "F:\\unified-sel\\results\\continual_no_boundary\\20260403_132454.json"
+    ]
+  },
+  "metrics": {
+    "fixed": {
+      "avg_accuracy": {
+        "mean": 0.484375,
+        "std": 0.0,
+        "min": 0.484375,
+        "max": 0.484375,
+        "n": 1
+      },
+      "task_0_final_accuracy": {
+        "mean": 0.0625,
+        "std": 0.0,
+        "min": 0.0625,
+        "max": 0.0625,
+        "n": 1
+      },
+      "task_1_final_accuracy": {
+        "mean": 0.90625,
+        "std": 0.0,
+        "min": 0.90625,
+        "max": 0.90625,
+        "n": 1
+      },
+      "forgetting_task_0": {
+        "mean": 0.83203125,
+        "std": 0.0,
+        "min": 0.83203125,
+        "max": 0.83203125,
+        "n": 1
+      }
+    },
+    "ewc": {
+      "avg_accuracy": {
+        "mean": 0.501953125,
+        "std": 0.0,
+        "min": 0.501953125,
+        "max": 0.501953125,
+        "n": 1
+      },
+      "task_0_final_accuracy": {
+        "mean": 0.81640625,
+        "std": 0.0,
+        "min": 0.81640625,
+        "max": 0.81640625,
+        "n": 1
+      },
+      "task_1_final_accuracy": {
+        "mean": 0.1875,
+        "std": 0.0,
+        "min": 0.1875,
+        "max": 0.1875,
+        "n": 1
+      },
+      "forgetting_task_0": {
+        "mean": 0.078125,
+        "std": 0.0,
+        "min": 0.078125,
+        "max": 0.078125,
+        "n": 1
+      }
+    },
+    "unified_sel": {
+      "avg_accuracy": {
+        "mean": 0.4990234375,
+        "std": 0.0283203125,
+        "min": 0.470703125,
+        "max": 0.52734375,
+        "n": 2,
+        "ci95_low": 0.470703125,
+        "ci95_high": 0.52734375
+      },
+      "task_0_final_accuracy": {
+        "mean": 0.451171875,
+        "std": 0.021484375,
+        "min": 0.4296875,
+        "max": 0.47265625,
+        "n": 2,
+        "ci95_low": 0.4296875,
+        "ci95_high": 0.47265625
+      },
+      "task_1_final_accuracy": {
+        "mean": 0.546875,
+        "std": 0.03515625,
+        "min": 0.51171875,
+        "max": 0.58203125,
+        "n": 2,
+        "ci95_low": 0.51171875,
+        "ci95_high": 0.58203125
+      },
+      "forgetting_task_0": {
+        "mean": 0.115234375,
+        "std": 0.201171875,
+        "min": -0.0859375,
+        "max": 0.31640625,
+        "n": 2,
+        "ci95_low": -0.0859375,
+        "ci95_high": 0.31640625
+      },
+      "max_structures_seen": {
+        "mean": 12.0,
+        "std": 0.0,
+        "min": 12.0,
+        "max": 12.0,
+        "n": 2,
+        "ci95_low": 12.0,
+        "ci95_high": 12.0
+      },
+      "recent_mean_loss": {
+        "mean": 0.29548693957973826,
+        "std": 0.007550911739128557,
+        "min": 0.2879360278406097,
+        "max": 0.3030378513188668,
+        "n": 2,
+        "ci95_low": 0.2879360278406097,
+        "ci95_high": 0.3030378513188668
+      },
+      "recent_mean_surprise": {
+        "mean": 0.47506500000000007,
+        "std": 0.01635500000000001,
+        "min": 0.45871000000000006,
+        "max": 0.4914200000000001,
+        "n": 2,
+        "ci95_low": 0.45871000000000006,
+        "ci95_high": 0.4914200000000001
+      }
+    }
+  },
+  "headline": {
+    "avg_accuracy": {
+      "fixed": 0.484375,
+      "ewc": 0.501953125,
+      "unified_sel": 0.4990234375
+    },
+    "forgetting_task_0": {
+      "fixed": 0.83203125,
+      "ewc": 0.078125,
+      "unified_sel": 0.115234375
+    },
+    "preliminary_decision": {
+      "unified_beats_ewc_on_avg_accuracy": false,
+      "unified_beats_ewc_on_forgetting": false
+    }
+  },
+  "goal_report": {
+    "avg_accuracy_vs_ewc": {
+      "status": "fail",
+      "higher_is_better": true,
+      "unified_mean": 0.4990234375,
+      "reference_mean": 0.501953125,
+      "delta_mean": -0.0029296875,
+      "delta_ci95_low": -0.03125,
+      "delta_ci95_high": 0.025390625,
+      "p_value": null,
+      "effect_size_cohen_d": null,
+      "direction_ok": false,
+      "statistically_supported": false,
+      "unified_n": 2,
+      "reference_n": 1,
+      "method": "bootstrap_delta_ci"
+    },
+    "forgetting_vs_ewc": {
+      "status": "fail",
+      "higher_is_better": false,
+      "unified_mean": 0.115234375,
+      "reference_mean": 0.078125,
+      "delta_mean": 0.037109375,
+      "delta_ci95_low": -0.1640625,
+      "delta_ci95_high": 0.23828125,
+      "p_value": null,
+      "effect_size_cohen_d": null,
+      "direction_ok": false,
+      "statistically_supported": false,
+      "unified_n": 2,
+      "reference_n": 1,
+      "method": "bootstrap_delta_ci"
+    },
+    "statistical_significance": {
+      "avg_accuracy": {
+        "unified_mean": 0.4990234375,
+        "reference_mean": 0.501953125,
+        "delta_mean": -0.0029296875,
+        "delta_ci95_low": -0.03125,
+        "delta_ci95_high": 0.025390625,
+        "p_value": null,
+        "effect_size_cohen_d": null,
+        "direction_ok": false,
+        "statistically_supported": false,
+        "unified_n": 2,
+        "reference_n": 1,
+        "method": "bootstrap_delta_ci"
+      },
+      "forgetting": {
+        "unified_mean": 0.115234375,
+        "reference_mean": 0.078125,
+        "delta_mean": 0.037109375,
+        "delta_ci95_low": -0.1640625,
+        "delta_ci95_high": 0.23828125,
+        "p_value": null,
+        "effect_size_cohen_d": null,
+        "direction_ok": false,
+        "statistically_supported": false,
+        "unified_n": 2,
+        "reference_n": 1,
+        "method": "bootstrap_delta_ci"
+      },
+      "status": "fail"
+    },
+    "overall": "fail"
+  },
+  "analysis": {
+    "unified_avg_accuracy_minus_ewc": -0.0029296875,
+    "unified_forgetting_minus_ewc": 0.037109375,
+    "unified_max_structures_seen_mean": 12.0,
+    "accuracy_sample_sizes": {
+      "unified_sel": 2,
+      "ewc": 1
+    },
+    "forgetting_sample_sizes": {
+      "unified_sel": 2,
+      "ewc": 1
+    }
+  }
+}

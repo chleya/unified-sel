@@ -1,0 +1,46 @@
+{
+  "sources": {
+    "fixed": "F:\\unified-sel\\results\\baseline_fixed\\20260403_102846.json",
+    "ewc": "F:\\unified-sel\\results\\baseline_ewc\\20260403_102846.json",
+    "unified_sel": "F:\\unified-sel\\results\\continual_no_boundary\\20260403_115054.json"
+  },
+  "metrics": {
+    "fixed": {
+      "task_0_final_accuracy": 0.0625,
+      "task_1_final_accuracy": 0.90625,
+      "forgetting_task_0": 0.83203125
+    },
+    "ewc": {
+      "task_0_final_accuracy": 0.81640625,
+      "task_1_final_accuracy": 0.1875,
+      "forgetting_task_0": 0.078125
+    },
+    "unified_sel": {
+      "task_0_final_accuracy_mean": 0.453125,
+      "task_1_final_accuracy_mean": 0.559375,
+      "forgetting_task_0_mean": 0.17578125,
+      "max_structures_seen_mean": 12.0,
+      "aggregate_event_counts": {
+        "reinforce": 2917,
+        "branch": 48,
+        "create": 35
+      }
+    }
+  },
+  "headline": {
+    "avg_accuracy": {
+      "fixed": 0.484375,
+      "ewc": 0.501953125,
+      "unified_sel": 0.50625
+    },
+    "forgetting_task_0": {
+      "fixed": 0.83203125,
+      "ewc": 0.078125,
+      "unified_sel": 0.17578125
+    },
+    "preliminary_decision": {
+      "unified_beats_ewc_on_avg_accuracy": true,
+      "unified_beats_ewc_on_forgetting": false
+    }
+  }
+}

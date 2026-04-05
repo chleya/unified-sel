@@ -1,0 +1,12 @@
+{
+  "baseline": "fixed",
+  "seed": 7,
+  "task_0_accuracy_after_task_0": 0.89453125,
+  "task_0_accuracy_after_task_1": 0.0625,
+  "task_1_accuracy_after_task_1": 0.90625,
+  "forgetting_task_0": 0.83203125,
+  "mean_training_loss": {
+    "task_0": 0.3685470452809354,
+    "task_1": 0.417560043091741
+  }
+}

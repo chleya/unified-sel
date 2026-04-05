@@ -1,0 +1,1782 @@
+{
+  "source_result": "F:\\unified-sel\\results\\continual_no_boundary\\20260403_144915.json",
+  "experiment": "no_boundary",
+  "num_runs": 5,
+  "summary": {
+    "num_runs": 5,
+    "forgetting": {
+      "mean": 0.02734375,
+      "std": 0.12896542202514982,
+      "min": -0.0859375,
+      "max": 0.26953125
+    },
+    "phase_means": {
+      "mid_avg_surprise": 0.3467377,
+      "late_avg_surprise": 0.32552250000000005,
+      "mid_avg_tension": 0.38923143786690007,
+      "late_avg_tension": 0.41372442993473335
+    },
+    "boundary_summary": {
+      "mean_stability_score": 0.10500000000000001,
+      "mean_active_window_ratio": 0.25,
+      "mean_collapse_count": 1.4,
+      "status_counts": {
+        "recurrent_pressure": 3,
+        "transient": 2
+      }
+    },
+    "high_forgetting_seeds": [
+      9
+    ],
+    "high_instability_seeds": [
+      7,
+      8,
+      9,
+      10,
+      11
+    ]
+  },
+  "runs": [
+    {
+      "seed": 7,
+      "forgetting_task_0": -0.0859375,
+      "task_0_accuracy_after_early_stream": 0.39453125,
+      "task_0_accuracy_final": 0.48046875,
+      "task_1_accuracy_final": 0.53515625,
+      "max_structures_seen": 12,
+      "phase_summary": {
+        "early": {
+          "count": 200,
+          "avg_loss": 0.3082030960353272,
+          "avg_surprise": 0.3395094999999999,
+          "avg_tension": 0.28336759653548116,
+          "avg_utility": 0.3253219480519479,
+          "avg_structures": 11.595,
+          "event_counts": {
+            "reinforce": 189,
+            "branch": 6,
+            "create": 5
+          }
+        },
+        "mid": {
+          "count": 200,
+          "avg_loss": 0.2969725433976152,
+          "avg_surprise": 0.314377,
+          "avg_tension": 0.32892541522856505,
+          "avg_utility": 0.23393484848484816,
+          "avg_structures": 11.89,
+          "event_counts": {
+            "reinforce": 195,
+            "branch": 3,
+            "create": 2
+          }
+        },
+        "late": {
+          "count": 200,
+          "avg_loss": 0.28227864849054923,
+          "avg_surprise": 0.32757600000000003,
+          "avg_tension": 0.4924801037448047,
+          "avg_utility": 0.2774620303030301,
+          "avg_structures": 11.965,
+          "event_counts": {
+            "reinforce": 199,
+            "branch": 1,
+            "create": 0
+          }
+        }
+      },
+      "transition_deltas": {
+        "mid_minus_early_surprise": -0.02513249999999989,
+        "late_minus_mid_surprise": 0.013199000000000016,
+        "mid_minus_early_tension": 0.045557818693083896,
+        "late_minus_mid_tension": 0.16355468851623967,
+        "late_minus_early_structures": 0.3699999999999992
+      },
+      "boundary_metrics": {
+        "activation_threshold": 0.17157945726616403,
+        "active_window_count": 3,
+        "active_window_ratio": 0.25,
+        "episode_count": 3,
+        "first_emergence_window_index": 0,
+        "first_emergence_step_end": 50,
+        "first_emergence_phase": "early",
+        "longest_episode_length": 1,
+        "longest_episode_phase_span": [
+          "early"
+        ],
+        "collapse_count": 2,
+        "reactivation_count": 2,
+        "late_active_window_count": 1,
+        "late_reactivation_count": 1,
+        "stability_score": 0.06666666666666668,
+        "status": "recurrent_pressure",
+        "episodes": [
+          {
+            "start_window_index": 0,
+            "end_window_index": 0,
+            "start_step_end": 50,
+            "end_step_end": 50,
+            "start_phase": "early",
+            "end_phase": "early",
+            "phase_span": [
+              "early"
+            ],
+            "length": 1,
+            "mean_pressure_score": 0.28607147950888734
+          },
+          {
+            "start_window_index": 5,
+            "end_window_index": 5,
+            "start_step_end": 300,
+            "end_step_end": 300,
+            "start_phase": "mid",
+            "end_phase": "mid",
+            "phase_span": [
+              "mid"
+            ],
+            "length": 1,
+            "mean_pressure_score": 0.17593820010673134
+          },
+          {
+            "start_window_index": 7,
+            "end_window_index": 7,
+            "start_step_end": 400,
+            "end_step_end": 400,
+            "start_phase": "late",
+            "end_phase": "late",
+            "phase_span": [
+              "late"
+            ],
+            "length": 1,
+            "mean_pressure_score": 0.17299397198150124
+          }
+        ],
+        "active_window_indices": [
+          0,
+          5,
+          7
+        ]
+      },
+      "top_boundary_windows": [
+        {
+          "window_index": 0,
+          "step_end": 50,
+          "avg_loss": 0.3503833975444366,
+          "avg_surprise": 0.35331599999999996,
+          "event_counts": {
+            "reinforce": 39,
+            "branch": 6,
+            "create": 5
+          },
+          "avg_structures": 10.38,
+          "max_structures": 12,
+          "phase": "early",
+          "pressure_score": 0.28607147950888734
+        },
+        {
+          "window_index": 5,
+          "step_end": 300,
+          "avg_loss": 0.2980550005336568,
+          "avg_surprise": 0.3544239999999999,
+          "event_counts": {
+            "reinforce": 49,
+            "branch": 1,
+            "create": 0
+          },
+          "avg_structures": 11.98,
+          "max_structures": 12,
+          "phase": "mid",
+          "pressure_score": 0.17593820010673134
+        },
+        {
+          "window_index": 7,
+          "step_end": 400,
+          "avg_loss": 0.28751485990750625,
+          "avg_surprise": 0.28497,
+          "event_counts": {
+            "reinforce": 47,
+            "branch": 1,
+            "create": 2
+          },
+          "avg_structures": 11.76,
+          "max_structures": 12,
+          "phase": "late",
+          "pressure_score": 0.17299397198150124
+        },
+        {
+          "window_index": 11,
+          "step_end": 600,
+          "avg_loss": 0.2894097618052581,
+          "avg_surprise": 0.37742000000000003,
+          "event_counts": {
+            "reinforce": 50,
+            "branch": 0,
+            "create": 0
+          },
+          "avg_structures": 11.96,
+          "max_structures": 12,
+          "phase": "late",
+          "pressure_score": 0.17110795236105164
+        },
+        {
+          "window_index": 2,
+          "step_end": 150,
+          "avg_loss": 0.28465459188552583,
+          "avg_surprise": 0.36188799999999993,
+          "event_counts": {
+            "reinforce": 50,
+            "branch": 0,
+            "create": 0
+          },
+          "avg_structures": 12.0,
+          "max_structures": 12,
+          "phase": "early",
+          "pressure_score": 0.16549731837710516
+        }
+      ],
+      "boundary_candidate_steps": [
+        {
+          "step": 2,
+          "progress": 0.001669449081803005,
+          "phase": "early",
+          "event": "create",
+          "surprise": 0.998,
+          "avg_tension": 0.3,
+          "avg_utility": 0.4916666666666667,
+          "n_structures": 3,
+          "structure_jump": true,
+          "high_surprise": true,
+          "high_tension": false
+        },
+        {
+          "step": 8,
+          "progress": 0.011686143572621035,
+          "phase": "early",
+          "event": "create",
+          "surprise": 0.7326,
+          "avg_tension": 0.256902807797087,
+          "avg_utility": 0.48857142857142855,
+          "n_structures": 7,
+          "structure_jump": true,
+          "high_surprise": true,
+          "high_tension": false
+        },
+        {
+          "step": 352,
+          "progress": 0.5859766277128547,
+          "phase": "mid",
+          "event": "create",
+          "surprise": 0.6938,
+          "avg_tension": 0.2575521766986504,
+          "avg_utility": 0.30399999999999977,
+          "n_structures": 10,
+          "structure_jump": true,
+          "high_surprise": true,
+          "high_tension": false
+        },
+        {
+          "step": 5,
+          "progress": 0.00667779632721202,
+          "phase": "early",
+          "event": "create",
+          "surprise": 0.6357,
+          "avg_tension": 0.25919226644106014,
+          "avg_utility": 0.492,
+          "n_structures": 5,
+          "structure_jump": true,
+          "high_surprise": true,
+          "high_tension": false
+        },
+        {
+          "step": 306,
+          "progress": 0.5091819699499165,
+          "phase": "mid",
+          "event": "branch",
+          "surprise": 0.5416,
+          "avg_tension": 0.482608953933803,
+          "avg_utility": 0.24041666666666636,
+          "n_structures": 12,
+          "structure_jump": true,
+          "high_surprise": false,
+          "high_tension": false
+        },
+        {
+          "step": 14,
+          "progress": 0.021702838063439065,
+          "phase": "early",
+          "event": "create",
+          "surprise": 0.6093,
+          "avg_tension": 0.30055882388200905,
+          "avg_utility": 0.48,
+          "n_structures": 10,
+          "structure_jump": true,
+          "high_surprise": false,
+          "high_tension": false
+        },
+        {
+          "step": 406,
+          "progress": 0.676126878130217,
+          "phase": "late",
+          "event": "branch",
+          "surprise": 0.4664,
+          "avg_tension": 0.42680316461336093,
+          "avg_utility": 0.36291666666666655,
+          "n_structures": 12,
+          "structure_jump": true,
+          "high_surprise": false,
+          "high_tension": false
+        },
+        {
+          "step": 355,
+          "progress": 0.5909849749582637,
+          "phase": "mid",
+          "event": "create",
+          "surprise": 0.6031,
+          "avg_tension": 0.26032667871293436,
+          "avg_utility": 0.31954545454545435,
+          "n_structures": 11,
+          "structure_jump": true,
+          "high_surprise": false,
+          "high_tension": false
+        },
+        {
+          "step": 16,
+          "progress": 0.025041736227045076,
+          "phase": "early",
+          "event": "branch",
+          "surprise": 0.508,
+          "avg_tension": 0.32315768717889215,
+          "avg_utility": 0.4768181818181818,
+          "n_structures": 11,
+          "structure_jump": true,
+          "high_surprise": false,
+          "high_tension": false
+        },
+        {
+          "step": 17,
+          "progress": 0.02671118530884808,
+          "phase": "early",
+          "event": "branch",
+          "surprise": 0.4942,
+          "avg_tension": 0.30518133702169675,
+          "avg_utility": 0.47374999999999995,
+          "n_structures": 12,
+          "structure_jump": true,
+          "high_surprise": false,
+          "high_tension": false
+        },
+        {
+          "step": 251,
+          "progress": 0.41736227045075125,
+          "phase": "mid",
+          "event": "branch",
+          "surprise": 0.5702,
+          "avg_tension": 0.21642643119367053,
+          "avg_utility": 0.22333333333333302,
+          "n_structures": 12,
+          "structure_jump": true,
+          "high_surprise": false,
+          "high_tension": false
+        },
+        {
+          "step": 10,
+          "progress": 0.015025041736227046,
+          "phase": "early",
+          "event": "branch",
+          "surprise": 0.4884,
+          "avg_tension": 0.24647996161995658,
+          "avg_utility": 0.4816666666666667,
+          "n_structures": 9,
+          "structure_jump": true,
+          "high_surprise": false,
+          "high_tension": false
+        }
+      ]
+    },
+    {
+      "seed": 8,
+      "forgetting_task_0": 0.02734375,
+      "task_0_accuracy_after_early_stream": 0.74609375,
+      "task_0_accuracy_final": 0.71875,
+      "task_1_accuracy_final": 0.25,
+      "max_structures_seen": 12,
+      "phase_summary": {
+        "early": {
+          "count": 200,
+          "avg_loss": 0.3178502764766373,
+          "avg_surprise": 0.40616349999999996,
+          "avg_tension": 0.3225052886338672,
+          "avg_utility": 0.31505465548340533,
+          "avg_structures": 11.555,
+          "event_counts": {
+            "reinforce": 189,
+            "branch": 6,
+            "create": 5
+          }
+        },
+        "mid": {
+          "count": 200,
+          "avg_loss": 0.32155797407497816,
+          "avg_surprise": 0.375666,
+          "avg_tension": 0.3818220592505756,
+          "avg_utility": 0.22597651515151504,
+          "avg_structures": 11.99,
+          "event_counts": {
+            "reinforce": 198,
+            "branch": 2,
+            "create": 0
+          }
+        },
+        "late": {
+          "count": 200,
+          "avg_loss": 0.35959976172641417,
+          "avg_surprise": 0.366144,
+          "avg_tension": 0.40758651763096965,
+          "avg_utility": 0.24493877651515114,
+          "avg_structures": 11.955,
+          "event_counts": {
+            "reinforce": 197,
+            "branch": 1,
+            "create": 2
+          }
+        }
+      },
+      "transition_deltas": {
+        "mid_minus_early_surprise": -0.030497499999999955,
+        "late_minus_mid_surprise": -0.009521999999999975,
+        "mid_minus_early_tension": 0.059316770616708425,
+        "late_minus_mid_tension": 0.02576445838039404,
+        "late_minus_early_structures": 0.40000000000000036
+      },
+      "boundary_metrics": {
+        "activation_threshold": 0.19638163983463297,
+        "active_window_count": 3,
+        "active_window_ratio": 0.25,
+        "episode_count": 2,
+        "first_emergence_window_index": 0,
+        "first_emergence_step_end": 50,
+        "first_emergence_phase": "early",
+        "longest_episode_length": 2,
+        "longest_episode_phase_span": [
+          "early"
+        ],
+        "collapse_count": 1,
+        "reactivation_count": 1,
+        "late_active_window_count": 1,
+        "late_reactivation_count": 1,
+        "stability_score": 0.125,
+        "status": "recurrent_pressure",
+        "episodes": [
+          {
+            "start_window_index": 0,
+            "end_window_index": 1,
+            "start_step_end": 50,
+            "end_step_end": 100,
+            "start_phase": "early",
+            "end_phase": "early",
+            "phase_span": [
+              "early"
+            ],
+            "length": 2,
+            "mean_pressure_score": 0.25274630549583266
+          },
+          {
+            "start_window_index": 8,
+            "end_window_index": 8,
+            "start_step_end": 450,
+            "end_step_end": 450,
+            "start_phase": "late",
+            "end_phase": "late",
+            "phase_span": [
+              "late"
+            ],
+            "length": 1,
+            "mean_pressure_score": 0.20282918091208257
+          }
+        ],
+        "active_window_indices": [
+          0,
+          1,
+          8
+        ]
+      },
+      "top_boundary_windows": [
+        {
+          "window_index": 0,
+          "step_end": 50,
+          "avg_loss": 0.3876523708846913,
+          "avg_surprise": 0.402862,
+          "event_counts": {
+            "reinforce": 39,
+            "branch": 6,
+            "create": 5
+          },
+          "avg_structures": 10.22,
+          "max_structures": 12,
+          "phase": "early",
+          "pressure_score": 0.3083890741769383
+        },
+        {
+          "window_index": 8,
+          "step_end": 450,
+          "avg_loss": 0.39168490456041277,
+          "avg_surprise": 0.414974,
+          "event_counts": {
+            "reinforce": 50,
+            "branch": 0,
+            "create": 0
+          },
+          "avg_structures": 11.98,
+          "max_structures": 12,
+          "phase": "late",
+          "pressure_score": 0.20282918091208257
+        },
+        {
+          "window_index": 1,
+          "step_end": 100,
+          "avg_loss": 0.3126206840736349,
+          "avg_surprise": 0.44859799999999994,
+          "event_counts": {
+            "reinforce": 50,
+            "branch": 0,
+            "create": 0
+          },
+          "avg_structures": 12.0,
+          "max_structures": 12,
+          "phase": "early",
+          "pressure_score": 0.19710353681472698
+        },
+        {
+          "window_index": 9,
+          "step_end": 500,
+          "avg_loss": 0.3503700375396748,
+          "avg_surprise": 0.38689,
+          "event_counts": {
+            "reinforce": 49,
+            "branch": 1,
+            "create": 0
+          },
+          "avg_structures": 11.94,
+          "max_structures": 12,
+          "phase": "late",
+          "pressure_score": 0.19614100750793495
+        },
+        {
+          "window_index": 5,
+          "step_end": 300,
+          "avg_loss": 0.3281063622054469,
+          "avg_surprise": 0.396546,
+          "event_counts": {
+            "reinforce": 49,
+            "branch": 1,
+            "create": 0
+          },
+          "avg_structures": 12.0,
+          "max_structures": 12,
+          "phase": "mid",
+          "pressure_score": 0.19458507244108936
+        }
+      ],
+      "boundary_candidate_steps": [
+        {
+          "step": 2,
+          "progress": 0.001669449081803005,
+          "phase": "early",
+          "event": "create",
+          "surprise": 1.0,
+          "avg_tension": 0.3,
+          "avg_utility": 0.5175000000000001,
+          "n_structures": 2,
+          "structure_jump": true,
+          "high_surprise": true,
+          "high_tension": false
+        },
+        {
+          "step": 15,
+          "progress": 0.02337228714524207,
+          "phase": "early",
+          "event": "create",
+          "surprise": 0.7947,
+          "avg_tension": 0.38279257295192026,
+          "avg_utility": 0.4813636363636364,
+          "n_structures": 11,
+          "structure_jump": true,
+          "high_surprise": true,
+          "high_tension": false
+        },
+        {
+          "step": 3,
+          "progress": 0.00333889816360601,
+          "phase": "early",
+          "event": "create",
+          "surprise": 0.7669,
+          "avg_tension": 0.3,
+          "avg_utility": 0.5066666666666667,
+          "n_structures": 3,
+          "structure_jump": true,
+          "high_surprise": true,
+          "high_tension": false
+        },
+        {
+          "step": 454,
+          "progress": 0.7562604340567612,
+          "phase": "late",
+          "event": "branch",
+          "surprise": 0.5758,
+          "avg_tension": 0.5074702383430532,
+          "avg_utility": 0.24329166666666635,
+          "n_structures": 12,
+          "structure_jump": true,
+          "high_surprise": false,
+          "high_tension": true
+        },
+        {
+          "step": 5,
+          "progress": 0.00667779632721202,
+          "phase": "early",
+          "event": "create",
+          "surprise": 0.6648,
+          "avg_tension": 0.4281380168807873,
+          "avg_utility": 0.50875,
+          "n_structures": 4,
+          "structure_jump": true,
+          "high_surprise": false,
+          "high_tension": false
+        },
+        {
+          "step": 12,
+          "progress": 0.018363939899833055,
+          "phase": "early",
+          "event": "create",
+          "surprise": 0.6672,
+          "avg_tension": 0.4217278773493024,
+          "avg_utility": 0.48888888888888893,
+          "n_structures": 9,
+          "structure_jump": true,
+          "high_surprise": false,
+          "high_tension": false
+        },
+        {
+          "step": 551,
+          "progress": 0.9181969949916527,
+          "phase": "late",
+          "event": "create",
+          "surprise": 0.6484,
+          "avg_tension": 0.40916398986785013,
+          "avg_utility": 0.2869318181818177,
+          "n_structures": 11,
+          "structure_jump": true,
+          "high_surprise": false,
+          "high_tension": false
+        },
+        {
+          "step": 554,
+          "progress": 0.9232053422370617,
+          "phase": "late",
+          "event": "create",
+          "surprise": 0.6814,
+          "avg_tension": 0.35081553759656026,
+          "avg_utility": 0.3042291666666662,
+          "n_structures": 12,
+          "structure_jump": true,
+          "high_surprise": false,
+          "high_tension": false
+        },
+        {
+          "step": 351,
+          "progress": 0.5843071786310517,
+          "phase": "mid",
+          "event": "branch",
+          "surprise": 0.5997,
+          "avg_tension": 0.3932991396185804,
+          "avg_utility": 0.2695833333333332,
+          "n_structures": 12,
+          "structure_jump": true,
+          "high_surprise": false,
+          "high_tension": false
+        },
+        {
+          "step": 7,
+          "progress": 0.01001669449081803,
+          "phase": "early",
+          "event": "branch",
+          "surprise": 0.4558,
+          "avg_tension": 0.48220318907890264,
+          "avg_utility": 0.508,
+          "n_structures": 5,
+          "structure_jump": true,
+          "high_surprise": false,
+          "high_tension": false
+        },
+        {
+          "step": 16,
+          "progress": 0.025041736227045076,
+          "phase": "early",
+          "event": "branch",
+          "surprise": 0.5175,
+          "avg_tension": 0.3982920624781106,
+          "avg_utility": 0.4779166666666667,
+          "n_structures": 12,
+          "structure_jump": true,
+          "high_surprise": false,
+          "high_tension": false
+        },
+        {
+          "step": 10,
+          "progress": 0.015025041736227046,
+          "phase": "early",
+          "event": "branch",
+          "surprise": 0.435,
+          "avg_tension": 0.4449109950076796,
+          "avg_utility": 0.49187499999999995,
+          "n_structures": 8,
+          "structure_jump": true,
+          "high_surprise": false,
+          "high_tension": false
+        }
+      ]
+    },
+    {
+      "seed": 9,
+      "forgetting_task_0": 0.26953125,
+      "task_0_accuracy_after_early_stream": 0.90625,
+      "task_0_accuracy_final": 0.63671875,
+      "task_1_accuracy_final": 0.41015625,
+      "max_structures_seen": 12,
+      "phase_summary": {
+        "early": {
+          "count": 200,
+          "avg_loss": 0.3405900187599728,
+          "avg_surprise": 0.3194415,
+          "avg_tension": 0.36583707386091546,
+          "avg_utility": 0.3270512274531022,
+          "avg_structures": 11.585,
+          "event_counts": {
+            "reinforce": 189,
+            "branch": 5,
+            "create": 6
+          }
+        },
+        "mid": {
+          "count": 200,
+          "avg_loss": 0.3863733762285208,
+          "avg_surprise": 0.34209,
+          "avg_tension": 0.48995086677284455,
+          "avg_utility": 0.21624412878787852,
+          "avg_structures": 11.95,
+          "event_counts": {
+            "reinforce": 196,
+            "branch": 3,
+            "create": 1
+          }
+        },
+        "late": {
+          "count": 200,
+          "avg_loss": 0.306240374750713,
+          "avg_surprise": 0.2919945,
+          "avg_tension": 0.36152814565588853,
+          "avg_utility": 0.2954066287878785,
+          "avg_structures": 11.93,
+          "event_counts": {
+            "reinforce": 195,
+            "branch": 4,
+            "create": 1
+          }
+        }
+      },
+      "transition_deltas": {
+        "mid_minus_early_surprise": 0.022648500000000016,
+        "late_minus_mid_surprise": -0.050095500000000015,
+        "mid_minus_early_tension": 0.12411379291192909,
+        "late_minus_mid_tension": -0.12842272111695602,
+        "late_minus_early_structures": 0.34499999999999886
+      },
+      "boundary_metrics": {
+        "activation_threshold": 0.18670652211916486,
+        "active_window_count": 3,
+        "active_window_ratio": 0.25,
+        "episode_count": 2,
+        "first_emergence_window_index": 0,
+        "first_emergence_step_end": 50,
+        "first_emergence_phase": "early",
+        "longest_episode_length": 2,
+        "longest_episode_phase_span": [
+          "mid"
+        ],
+        "collapse_count": 1,
+        "reactivation_count": 1,
+        "late_active_window_count": 0,
+        "late_reactivation_count": 0,
+        "stability_score": 0.14166666666666666,
+        "status": "transient",
+        "episodes": [
+          {
+            "start_window_index": 0,
+            "end_window_index": 0,
+            "start_step_end": 50,
+            "end_step_end": 50,
+            "start_phase": "early",
+            "end_phase": "early",
+            "phase_span": [
+              "early"
+            ],
+            "length": 1,
+            "mean_pressure_score": 0.29608248977451046
+          },
+          {
+            "start_window_index": 5,
+            "end_window_index": 6,
+            "start_step_end": 300,
+            "end_step_end": 350,
+            "start_phase": "mid",
+            "end_phase": "mid",
+            "phase_span": [
+              "mid"
+            ],
+            "length": 2,
+            "mean_pressure_score": 0.19866425724733897
+          }
+        ],
+        "active_window_indices": [
+          0,
+          5,
+          6
+        ]
+      },
+      "top_boundary_windows": [
+        {
+          "window_index": 0,
+          "step_end": 50,
+          "avg_loss": 0.38626344887255215,
+          "avg_surprise": 0.36276600000000003,
+          "event_counts": {
+            "reinforce": 39,
+            "branch": 5,
+            "create": 6
+          },
+          "avg_structures": 10.34,
+          "max_structures": 12,
+          "phase": "early",
+          "pressure_score": 0.29608248977451046
+        },
+        {
+          "window_index": 6,
+          "step_end": 350,
+          "avg_loss": 0.37462481891380706,
+          "avg_surprise": 0.41120199999999996,
+          "event_counts": {
+            "reinforce": 49,
+            "branch": 1,
+            "create": 0
+          },
+          "avg_structures": 11.98,
+          "max_structures": 12,
+          "phase": "mid",
+          "pressure_score": 0.20828556378276142
+        },
+        {
+          "window_index": 5,
+          "step_end": 300,
+          "avg_loss": 0.39870675355958246,
+          "avg_surprise": 0.29767200000000005,
+          "event_counts": {
+            "reinforce": 48,
+            "branch": 2,
+            "create": 0
+          },
+          "avg_structures": 11.96,
+          "max_structures": 12,
+          "phase": "mid",
+          "pressure_score": 0.1890429507119165
+        },
+        {
+          "window_index": 7,
+          "step_end": 400,
+          "avg_loss": 0.3638905629412383,
+          "avg_surprise": 0.34383199999999997,
+          "event_counts": {
+            "reinforce": 49,
+            "branch": 0,
+            "create": 1
+          },
+          "avg_structures": 11.9,
+          "max_structures": 12,
+          "phase": "late",
+          "pressure_score": 0.18592771258824764
+        },
+        {
+          "window_index": 4,
+          "step_end": 250,
+          "avg_loss": 0.4082713694994552,
+          "avg_surprise": 0.315654,
+          "event_counts": {
+            "reinforce": 50,
+            "branch": 0,
+            "create": 0
+          },
+          "avg_structures": 11.96,
+          "max_structures": 12,
+          "phase": "mid",
+          "pressure_score": 0.17635047389989106
+        }
+      ],
+      "boundary_candidate_steps": [
+        {
+          "step": 2,
+          "progress": 0.001669449081803005,
+          "phase": "early",
+          "event": "create",
+          "surprise": 1.0,
+          "avg_tension": 0.3,
+          "avg_utility": 0.4916666666666667,
+          "n_structures": 3,
+          "structure_jump": true,
+          "high_surprise": true,
+          "high_tension": false
+        },
+        {
+          "step": 5,
+          "progress": 0.00667779632721202,
+          "phase": "early",
+          "event": "create",
+          "surprise": 0.863,
+          "avg_tension": 0.39910404960729917,
+          "avg_utility": 0.492,
+          "n_structures": 5,
+          "structure_jump": true,
+          "high_surprise": true,
+          "high_tension": false
+        },
+        {
+          "step": 354,
+          "progress": 0.5893155258764607,
+          "phase": "mid",
+          "event": "create",
+          "surprise": 0.7932,
+          "avg_tension": 0.4537319193958113,
+          "avg_utility": 0.25708333333333305,
+          "n_structures": 12,
+          "structure_jump": true,
+          "high_surprise": true,
+          "high_tension": false
+        },
+        {
+          "step": 6,
+          "progress": 0.008347245409015025,
+          "phase": "early",
+          "event": "create",
+          "surprise": 0.6779,
+          "avg_tension": 0.3825867080060827,
+          "avg_utility": 0.48833333333333334,
+          "n_structures": 6,
+          "structure_jump": true,
+          "high_surprise": true,
+          "high_tension": false
+        },
+        {
+          "step": 13,
+          "progress": 0.02003338898163606,
+          "phase": "early",
+          "event": "create",
+          "surprise": 0.6853,
+          "avg_tension": 0.370107348139419,
+          "avg_utility": 0.4855555555555556,
+          "n_structures": 9,
+          "structure_jump": true,
+          "high_surprise": true,
+          "high_tension": false
+        },
+        {
+          "step": 3,
+          "progress": 0.00333889816360601,
+          "phase": "early",
+          "event": "create",
+          "surprise": 0.7337,
+          "avg_tension": 0.3,
+          "avg_utility": 0.48875,
+          "n_structures": 4,
+          "structure_jump": true,
+          "high_surprise": true,
+          "high_tension": false
+        },
+        {
+          "step": 401,
+          "progress": 0.667779632721202,
+          "phase": "late",
+          "event": "create",
+          "surprise": 0.6151,
+          "avg_tension": 0.34784760313921753,
+          "avg_utility": 0.31363636363636344,
+          "n_structures": 11,
+          "structure_jump": true,
+          "high_surprise": true,
+          "high_tension": false
+        },
+        {
+          "step": 251,
+          "progress": 0.41736227045075125,
+          "phase": "mid",
+          "event": "branch",
+          "surprise": 0.493,
+          "avg_tension": 0.6104618146372487,
+          "avg_utility": 0.20272727272727248,
+          "n_structures": 11,
+          "structure_jump": true,
+          "high_surprise": false,
+          "high_tension": true
+        },
+        {
+          "step": 252,
+          "progress": 0.41903171953255425,
+          "phase": "mid",
+          "event": "branch",
+          "surprise": 0.4581,
+          "avg_tension": 0.6009628650906459,
+          "avg_utility": 0.22333333333333316,
+          "n_structures": 12,
+          "structure_jump": true,
+          "high_surprise": false,
+          "high_tension": true
+        },
+        {
+          "step": 301,
+          "progress": 0.5008347245409015,
+          "phase": "mid",
+          "event": "branch",
+          "surprise": 0.4864,
+          "avg_tension": 0.5539688372315822,
+          "avg_utility": 0.2695833333333331,
+          "n_structures": 12,
+          "structure_jump": true,
+          "high_surprise": false,
+          "high_tension": true
+        },
+        {
+          "step": 456,
+          "progress": 0.7595993322203672,
+          "phase": "late",
+          "event": "branch",
+          "surprise": 0.5404,
+          "avg_tension": 0.40606111155909264,
+          "avg_utility": 0.30166666666666636,
+          "n_structures": 12,
+          "structure_jump": true,
+          "high_surprise": false,
+          "high_tension": false
+        },
+        {
+          "step": 7,
+          "progress": 0.01001669449081803,
+          "phase": "early",
+          "event": "branch",
+          "surprise": 0.515,
+          "avg_tension": 0.3579314640052137,
+          "avg_utility": 0.48499999999999993,
+          "n_structures": 7,
+          "structure_jump": true,
+          "high_surprise": false,
+          "high_tension": false
+        }
+      ]
+    },
+    {
+      "seed": 10,
+      "forgetting_task_0": -0.078125,
+      "task_0_accuracy_after_early_stream": 0.44140625,
+      "task_0_accuracy_final": 0.51953125,
+      "task_1_accuracy_final": 0.484375,
+      "max_structures_seen": 12,
+      "phase_summary": {
+        "early": {
+          "count": 200,
+          "avg_loss": 0.30267970677093087,
+          "avg_surprise": 0.37787099999999996,
+          "avg_tension": 0.26066631469701557,
+          "avg_utility": 0.33448457792207775,
+          "avg_structures": 11.36,
+          "event_counts": {
+            "reinforce": 189,
+            "branch": 7,
+            "create": 4
+          }
+        },
+        "mid": {
+          "count": 200,
+          "avg_loss": 0.3035546119949328,
+          "avg_surprise": 0.384266,
+          "avg_tension": 0.40305345695231165,
+          "avg_utility": 0.20614454545454514,
+          "avg_structures": 11.965,
+          "event_counts": {
+            "reinforce": 197,
+            "branch": 2,
+            "create": 1
+          }
+        },
+        "late": {
+          "count": 200,
+          "avg_loss": 0.2741998261972529,
+          "avg_surprise": 0.32608849999999995,
+          "avg_tension": 0.4158398069204115,
+          "avg_utility": 0.2843352253787875,
+          "avg_structures": 11.965,
+          "event_counts": {
+            "reinforce": 196,
+            "branch": 3,
+            "create": 1
+          }
+        }
+      },
+      "transition_deltas": {
+        "mid_minus_early_surprise": 0.0063950000000000395,
+        "late_minus_mid_surprise": -0.05817750000000005,
+        "mid_minus_early_tension": 0.14238714225529608,
+        "late_minus_mid_tension": 0.012786349968099853,
+        "late_minus_early_structures": 0.6050000000000004
+      },
+      "boundary_metrics": {
+        "activation_threshold": 0.1840203450075875,
+        "active_window_count": 3,
+        "active_window_ratio": 0.25,
+        "episode_count": 2,
+        "first_emergence_window_index": 0,
+        "first_emergence_step_end": 50,
+        "first_emergence_phase": "early",
+        "longest_episode_length": 2,
+        "longest_episode_phase_span": [
+          "mid"
+        ],
+        "collapse_count": 1,
+        "reactivation_count": 1,
+        "late_active_window_count": 0,
+        "late_reactivation_count": 0,
+        "stability_score": 0.14166666666666666,
+        "status": "transient",
+        "episodes": [
+          {
+            "start_window_index": 0,
+            "end_window_index": 0,
+            "start_step_end": 50,
+            "end_step_end": 50,
+            "start_phase": "early",
+            "end_phase": "early",
+            "phase_span": [
+              "early"
+            ],
+            "length": 1,
+            "mean_pressure_score": 0.29290412775539676
+          },
+          {
+            "start_window_index": 5,
+            "end_window_index": 6,
+            "start_step_end": 300,
+            "end_step_end": 350,
+            "start_phase": "mid",
+            "end_phase": "mid",
+            "phase_span": [
+              "mid"
+            ],
+            "length": 2,
+            "mean_pressure_score": 0.19838514978956112
+          }
+        ],
+        "active_window_indices": [
+          0,
+          5,
+          6
+        ]
+      },
+      "top_boundary_windows": [
+        {
+          "window_index": 0,
+          "step_end": 50,
+          "avg_loss": 0.33497763877698383,
+          "avg_surprise": 0.3863619999999999,
+          "event_counts": {
+            "reinforce": 39,
+            "branch": 7,
+            "create": 4
+          },
+          "avg_structures": 9.44,
+          "max_structures": 12,
+          "phase": "early",
+          "pressure_score": 0.29290412775539676
+        },
+        {
+          "window_index": 5,
+          "step_end": 300,
+          "avg_loss": 0.34600773601032114,
+          "avg_surprise": 0.4149539999999999,
+          "event_counts": {
+            "reinforce": 49,
+            "branch": 1,
+            "create": 0
+          },
+          "avg_structures": 11.96,
+          "max_structures": 12,
+          "phase": "mid",
+          "pressure_score": 0.2036877472020642
+        },
+        {
+          "window_index": 6,
+          "step_end": 350,
+          "avg_loss": 0.29842176188529024,
+          "avg_surprise": 0.377994,
+          "event_counts": {
+            "reinforce": 48,
+            "branch": 1,
+            "create": 1
+          },
+          "avg_structures": 11.94,
+          "max_structures": 12,
+          "phase": "mid",
+          "pressure_score": 0.19308255237705804
+        },
+        {
+          "window_index": 2,
+          "step_end": 150,
+          "avg_loss": 0.30919804608882007,
+          "avg_surprise": 0.39719999999999994,
+          "event_counts": {
+            "reinforce": 50,
+            "branch": 0,
+            "create": 0
+          },
+          "avg_structures": 12.0,
+          "max_structures": 12,
+          "phase": "early",
+          "pressure_score": 0.18099960921776398
+        },
+        {
+          "window_index": 9,
+          "step_end": 500,
+          "avg_loss": 0.27625013096097395,
+          "avg_surprise": 0.34235600000000005,
+          "event_counts": {
+            "reinforce": 48,
+            "branch": 2,
+            "create": 0
+          },
+          "avg_structures": 11.94,
+          "max_structures": 12,
+          "phase": "late",
+          "pressure_score": 0.17795682619219483
+        }
+      ],
+      "boundary_candidate_steps": [
+        {
+          "step": 8,
+          "progress": 0.011686143572621035,
+          "phase": "early",
+          "event": "create",
+          "surprise": 1.0,
+          "avg_tension": 0.3659485637881346,
+          "avg_utility": 0.5362500000000001,
+          "n_structures": 4,
+          "structure_jump": true,
+          "high_surprise": true,
+          "high_tension": false
+        },
+        {
+          "step": 17,
+          "progress": 0.02671118530884808,
+          "phase": "early",
+          "event": "create",
+          "surprise": 1.0,
+          "avg_tension": 0.35038623083102644,
+          "avg_utility": 0.5050000000000001,
+          "n_structures": 9,
+          "structure_jump": true,
+          "high_surprise": true,
+          "high_tension": false
+        },
+        {
+          "step": 22,
+          "progress": 0.035058430717863104,
+          "phase": "early",
+          "event": "create",
+          "surprise": 1.0,
+          "avg_tension": 0.3121335898826301,
+          "avg_utility": 0.48916666666666675,
+          "n_structures": 12,
+          "structure_jump": true,
+          "high_surprise": true,
+          "high_tension": false
+        },
+        {
+          "step": 2,
+          "progress": 0.001669449081803005,
+          "phase": "early",
+          "event": "create",
+          "surprise": 0.9883,
+          "avg_tension": 0.3,
+          "avg_utility": 0.5175000000000001,
+          "n_structures": 2,
+          "structure_jump": true,
+          "high_surprise": true,
+          "high_tension": false
+        },
+        {
+          "step": 301,
+          "progress": 0.5008347245409015,
+          "phase": "mid",
+          "event": "create",
+          "surprise": 0.7241,
+          "avg_tension": 0.2729970713126335,
+          "avg_utility": 0.2627272727272725,
+          "n_structures": 11,
+          "structure_jump": true,
+          "high_surprise": true,
+          "high_tension": false
+        },
+        {
+          "step": 4,
+          "progress": 0.005008347245409015,
+          "phase": "early",
+          "event": "branch",
+          "surprise": 0.5518,
+          "avg_tension": 0.5512228279845856,
+          "avg_utility": 0.52,
+          "n_structures": 3,
+          "structure_jump": true,
+          "high_surprise": false,
+          "high_tension": true
+        },
+        {
+          "step": 551,
+          "progress": 0.9181969949916527,
+          "phase": "late",
+          "event": "branch",
+          "surprise": 0.3412,
+          "avg_tension": 0.5733094244036371,
+          "avg_utility": 0.3156249999999997,
+          "n_structures": 12,
+          "structure_jump": true,
+          "high_surprise": false,
+          "high_tension": true
+        },
+        {
+          "step": 11,
+          "progress": 0.01669449081803005,
+          "phase": "early",
+          "event": "branch",
+          "surprise": 0.5919,
+          "avg_tension": 0.36672785817685166,
+          "avg_utility": 0.5191666666666667,
+          "n_structures": 6,
+          "structure_jump": true,
+          "high_surprise": false,
+          "high_tension": false
+        },
+        {
+          "step": 401,
+          "progress": 0.667779632721202,
+          "phase": "late",
+          "event": "create",
+          "surprise": 0.6473,
+          "avg_tension": 0.3071582014425936,
+          "avg_utility": 0.25666666666666643,
+          "n_structures": 12,
+          "structure_jump": true,
+          "high_surprise": false,
+          "high_tension": false
+        },
+        {
+          "step": 251,
+          "progress": 0.41736227045075125,
+          "phase": "mid",
+          "event": "branch",
+          "surprise": 0.4946,
+          "avg_tension": 0.43994892310313105,
+          "avg_utility": 0.1962499999999997,
+          "n_structures": 12,
+          "structure_jump": true,
+          "high_surprise": false,
+          "high_tension": false
+        },
+        {
+          "step": 18,
+          "progress": 0.028380634390651086,
+          "phase": "early",
+          "event": "branch",
+          "surprise": 0.5498,
+          "avg_tension": 0.3363476077479238,
+          "avg_utility": 0.4995,
+          "n_structures": 10,
+          "structure_jump": true,
+          "high_surprise": false,
+          "high_tension": false
+        },
+        {
+          "step": 19,
+          "progress": 0.03005008347245409,
+          "phase": "early",
+          "event": "branch",
+          "surprise": 0.5408,
+          "avg_tension": 0.31836878169826965,
+          "avg_utility": 0.49454545454545457,
+          "n_structures": 11,
+          "structure_jump": true,
+          "high_surprise": false,
+          "high_tension": false
+        }
+      ]
+    },
+    {
+      "seed": 11,
+      "forgetting_task_0": 0.00390625,
+      "task_0_accuracy_after_early_stream": 0.60546875,
+      "task_0_accuracy_final": 0.6015625,
+      "task_1_accuracy_final": 0.40234375,
+      "max_structures_seen": 12,
+      "phase_summary": {
+        "early": {
+          "count": 200,
+          "avg_loss": 0.31509838178216043,
+          "avg_surprise": 0.328248,
+          "avg_tension": 0.3470199765385898,
+          "avg_utility": 0.35361716089466066,
+          "avg_structures": 11.49,
+          "event_counts": {
+            "reinforce": 189,
+            "branch": 5,
+            "create": 6
+          }
+        },
+        "mid": {
+          "count": 200,
+          "avg_loss": 0.27771696864990714,
+          "avg_surprise": 0.3172895,
+          "avg_tension": 0.3424053911302037,
+          "avg_utility": 0.21128621212121154,
+          "avg_structures": 11.97,
+          "event_counts": {
+            "reinforce": 197,
+            "branch": 3,
+            "create": 0
+          }
+        },
+        "late": {
+          "count": 200,
+          "avg_loss": 0.2962992084609257,
+          "avg_surprise": 0.3158095,
+          "avg_tension": 0.39118757572159246,
+          "avg_utility": 0.2077870265151511,
+          "avg_structures": 11.885,
+          "event_counts": {
+            "reinforce": 195,
+            "branch": 5,
+            "create": 0
+          }
+        }
+      },
+      "transition_deltas": {
+        "mid_minus_early_surprise": -0.010958499999999982,
+        "late_minus_mid_surprise": -0.0014799999999999813,
+        "mid_minus_early_tension": -0.004614585408386107,
+        "late_minus_mid_tension": 0.04878218459138878,
+        "late_minus_early_structures": 0.3949999999999996
+      },
+      "boundary_metrics": {
+        "activation_threshold": 0.16330302835413818,
+        "active_window_count": 3,
+        "active_window_ratio": 0.25,
+        "episode_count": 3,
+        "first_emergence_window_index": 0,
+        "first_emergence_step_end": 50,
+        "first_emergence_phase": "early",
+        "longest_episode_length": 1,
+        "longest_episode_phase_span": [
+          "early"
+        ],
+        "collapse_count": 2,
+        "reactivation_count": 2,
+        "late_active_window_count": 2,
+        "late_reactivation_count": 2,
+        "stability_score": 0.05000000000000001,
+        "status": "recurrent_pressure",
+        "episodes": [
+          {
+            "start_window_index": 0,
+            "end_window_index": 0,
+            "start_step_end": 50,
+            "end_step_end": 50,
+            "start_phase": "early",
+            "end_phase": "early",
+            "phase_span": [
+              "early"
+            ],
+            "length": 1,
+            "mean_pressure_score": 0.2900550784019333
+          },
+          {
+            "start_window_index": 7,
+            "end_window_index": 7,
+            "start_step_end": 400,
+            "end_step_end": 400,
+            "start_phase": "late",
+            "end_phase": "late",
+            "phase_span": [
+              "late"
+            ],
+            "length": 1,
+            "mean_pressure_score": 0.16608445504103025
+          },
+          {
+            "start_window_index": 9,
+            "end_window_index": 9,
+            "start_step_end": 500,
+            "end_step_end": 500,
+            "start_phase": "late",
+            "end_phase": "late",
+            "phase_span": [
+              "late"
+            ],
+            "length": 1,
+            "mean_pressure_score": 0.2035681274069886
+          }
+        ],
+        "active_window_indices": [
+          0,
+          7,
+          9
+        ]
+      },
+      "top_boundary_windows": [
+        {
+          "window_index": 0,
+          "step_end": 50,
+          "avg_loss": 0.3601433920096664,
+          "avg_surprise": 0.360088,
+          "event_counts": {
+            "reinforce": 39,
+            "branch": 5,
+            "create": 6
+          },
+          "avg_structures": 9.96,
+          "max_structures": 12,
+          "phase": "early",
+          "pressure_score": 0.2900550784019333
+        },
+        {
+          "window_index": 9,
+          "step_end": 500,
+          "avg_loss": 0.2991676370349429,
+          "avg_surprise": 0.3457820000000001,
+          "event_counts": {
+            "reinforce": 46,
+            "branch": 4,
+            "create": 0
+          },
+          "avg_structures": 11.66,
+          "max_structures": 12,
+          "phase": "late",
+          "pressure_score": 0.2035681274069886
+        },
+        {
+          "window_index": 7,
+          "step_end": 400,
+          "avg_loss": 0.27309327520515125,
+          "avg_surprise": 0.304886,
+          "event_counts": {
+            "reinforce": 48,
+            "branch": 2,
+            "create": 0
+          },
+          "avg_structures": 11.94,
+          "max_structures": 12,
+          "phase": "late",
+          "pressure_score": 0.16608445504103025
+        },
+        {
+          "window_index": 5,
+          "step_end": 300,
+          "avg_loss": 0.2868314306258708,
+          "avg_surprise": 0.35003200000000007,
+          "event_counts": {
+            "reinforce": 50,
+            "branch": 0,
+            "create": 0
+          },
+          "avg_structures": 11.98,
+          "max_structures": 12,
+          "phase": "mid",
+          "pressure_score": 0.16237588612517417
+        },
+        {
+          "window_index": 2,
+          "step_end": 150,
+          "avg_loss": 0.3152314812060228,
+          "avg_surprise": 0.319966,
+          "event_counts": {
+            "reinforce": 50,
+            "branch": 0,
+            "create": 0
+          },
+          "avg_structures": 12.0,
+          "max_structures": 12,
+          "phase": "early",
+          "pressure_score": 0.15903609624120454
+        }
+      ],
+      "boundary_candidate_steps": [
+        {
+          "step": 12,
+          "progress": 0.018363939899833055,
+          "phase": "early",
+          "event": "create",
+          "surprise": 0.9056,
+          "avg_tension": 0.3085654873689558,
+          "avg_utility": 0.49375,
+          "n_structures": 8,
+          "structure_jump": true,
+          "high_surprise": true,
+          "high_tension": false
+        },
+        {
+          "step": 9,
+          "progress": 0.01335559265442404,
+          "phase": "early",
+          "event": "create",
+          "surprise": 0.8846,
+          "avg_tension": 0.320679041989769,
+          "avg_utility": 0.4942857142857143,
+          "n_structures": 7,
+          "structure_jump": true,
+          "high_surprise": true,
+          "high_tension": false
+        },
+        {
+          "step": 2,
+          "progress": 0.001669449081803005,
+          "phase": "early",
+          "event": "create",
+          "surprise": 0.8837,
+          "avg_tension": 0.3,
+          "avg_utility": 0.4916666666666667,
+          "n_structures": 3,
+          "structure_jump": true,
+          "high_surprise": true,
+          "high_tension": false
+        },
+        {
+          "step": 8,
+          "progress": 0.011686143572621035,
+          "phase": "early",
+          "event": "create",
+          "surprise": 0.6582,
+          "avg_tension": 0.3241255489880638,
+          "avg_utility": 0.4991666666666667,
+          "n_structures": 6,
+          "structure_jump": true,
+          "high_surprise": true,
+          "high_tension": false
+        },
+        {
+          "step": 18,
+          "progress": 0.028380634390651086,
+          "phase": "early",
+          "event": "create",
+          "surprise": 0.6241,
+          "avg_tension": 0.20547470556778613,
+          "avg_utility": 0.48272727272727267,
+          "n_structures": 11,
+          "structure_jump": true,
+          "high_surprise": true,
+          "high_tension": false
+        },
+        {
+          "step": 453,
+          "progress": 0.7545909849749582,
+          "phase": "late",
+          "event": "branch",
+          "surprise": 0.5981,
+          "avg_tension": 0.6251567318284112,
+          "avg_utility": 0.23555555555555513,
+          "n_structures": 9,
+          "structure_jump": true,
+          "high_surprise": false,
+          "high_tension": true
+        },
+        {
+          "step": 457,
+          "progress": 0.7612687813021702,
+          "phase": "late",
+          "event": "branch",
+          "surprise": 0.3898,
+          "avg_tension": 0.54487436548181,
+          "avg_utility": 0.28833333333333294,
+          "n_structures": 12,
+          "structure_jump": true,
+          "high_surprise": false,
+          "high_tension": true
+        },
+        {
+          "step": 455,
+          "progress": 0.7579298831385642,
+          "phase": "late",
+          "event": "branch",
+          "surprise": 0.3811,
+          "avg_tension": 0.55332943653518,
+          "avg_utility": 0.25749999999999956,
+          "n_structures": 10,
+          "structure_jump": true,
+          "high_surprise": false,
+          "high_tension": true
+        },
+        {
+          "step": 456,
+          "progress": 0.7595993322203672,
+          "phase": "late",
+          "event": "branch",
+          "surprise": 0.3339,
+          "avg_tension": 0.5475049289214611,
+          "avg_utility": 0.2745454545454542,
+          "n_structures": 11,
+          "structure_jump": true,
+          "high_surprise": false,
+          "high_tension": true
+        },
+        {
+          "step": 552,
+          "progress": 0.9198664440734557,
+          "phase": "late",
+          "event": "branch",
+          "surprise": 0.5428,
+          "avg_tension": 0.4470514025945447,
+          "avg_utility": 0.21958333333333294,
+          "n_structures": 12,
+          "structure_jump": true,
+          "high_surprise": false,
+          "high_tension": false
+        },
+        {
+          "step": 23,
+          "progress": 0.03672787979966611,
+          "phase": "early",
+          "event": "branch",
+          "surprise": 0.572,
+          "avg_tension": 0.28785378517412336,
+          "avg_utility": 0.4775,
+          "n_structures": 12,
+          "structure_jump": true,
+          "high_surprise": false,
+          "high_tension": false
+        },
+        {
+          "step": 352,
+          "progress": 0.5859766277128547,
+          "phase": "mid",
+          "event": "branch",
+          "surprise": 0.5273,
+          "avg_tension": 0.32614604480586834,
+          "avg_utility": 0.2636363636363631,
+          "n_structures": 11,
+          "structure_jump": true,
+          "high_surprise": false,
+          "high_tension": false
+        }
+      ]
+    }
+  ]
+}
