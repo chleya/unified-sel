@@ -27,7 +27,7 @@ class EmbeddingConfig:
 
 @dataclass
 class TopologyConfig:
-    max_homology_dim: int = 1          # compute H0 and H1
+    max_homology_dim: int = 2          # compute H0, H1, and H2 (H2 adds < 12ms overhead, validated P0+P1)
     persistence_threshold: Optional[float] = None  # None = use median
     filtration_steps: int = 30
     metric: str = "euclidean"

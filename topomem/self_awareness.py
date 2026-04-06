@@ -63,6 +63,59 @@ class DriftReport:
 
 
 @dataclass
+class H1Metrics:
+    """H1 persistent homology metrics.
+
+    Tracks topological cycles (H1) as a geometric quality signal.
+    NOT a semantic metric — H1 measures embedding manifold dispersion,
+    not semantic content richness.
+
+    Key insight (from P2/P3 experiments):
+    - Clean/precise embeddings → fewer H1 cycles (well-clustered)
+    - Noisy/random embeddings → more H1 cycles (geometric dispersion)
+    - H1 is blind to whether cycles carry semantic meaning
+    """
+    betti_1_count: int = 0
+    mean_h1_persistence: float = 0.0
+    max_h1_persistence: float = 0.0
+    min_h1_persistence: float = 0.0
+    h1_persistence_std: float = 0.0
+    fragmentation_index: float = 0.0  # betti_1 / n_nodes (high = fragmented)
+    h1_health_score: float = 1.0    # mean_pers / (1 + fragmentation)
+    h1_drift_since_baseline: float = 0.0  # Wasserstein-1 on H1 vs baseline
+    suppressed: bool = False  # True when n < 13 (insufficient for H1)
+    stability_score: float = 1.0  # 1 - noise_sensitivity (higher = more stable)
+
+
+@dataclass
+class H2Metrics:
+    """H2 persistent homology metrics.
+
+    Tracks 2D cavities (voids/holes) as a domain-bridging signal.
+
+    Key insight (from H2 exploration experiments):
+    - H2 emerges at domain boundaries (domain invasion: H2 +10x)
+    - H2/H1 ratio is the most sensitive domain-mixing indicator
+    - H2 detects inter-domain scaffolding: cavities form at cross-domain overlaps
+    - H2 requires more points than H1 (minimum ~20 nodes)
+
+    Physical interpretation:
+    - H2 (2D voids) form when points from DIFFERENT domains co-exist
+    - A 2D cavity = a "hole" in the 2D surface formed by embedding points
+    - More cross-domain mixing -> more 2D cavities -> higher H2
+    """
+    betti_2_count: int = 0
+    mean_h2_persistence: float = 0.0
+    max_h2_persistence: float = 0.0
+    h2_persistence_std: float = 0.0
+    h2_health_score: float = 1.0    # mean_pers / (1 + fragmentation)
+    h2_to_h1_ratio: float = 0.0    # H2/H1: domain-mixing sensitivity indicator
+    cavitation_rate: float = 0.0   # betti_2 / C(n,3): normalized cavitation measure
+    h2_drift_since_baseline: float = 0.0  # Wasserstein-1 on H2 vs baseline
+    suppressed: bool = False        # True when n < 20 (insufficient for H2)
+
+
+@dataclass
 class CalibrationReport:
     timestamp: float
     drift: DriftReport
@@ -73,6 +126,8 @@ class CalibrationReport:
     orphan_ratio: float        # 未分配簇的节点比例
     self_description_consistency: Optional[float]  # 与上次自述的相似度
     recommendations: List[str]  # 建议操作列表
+    h1_metrics: Optional[H1Metrics] = None  # H1 geometric quality signal
+    h2_metrics: Optional[H2Metrics] = None  # H2 domain-bridging signal
 
 
 # ------------------------------------------------------------------
@@ -356,9 +411,23 @@ class SelfAwareness:
                 memory_graph, engine, cluster_sizes
             )
 
-        # 5. 建议
+        # 5. H1 Geometric Quality Metrics (P4 core)
+        # Get diagram from the most recent fingerprint update
+        h1_diagram = None
+        if self._diagram_history:
+            h1_diagram = self._diagram_history[-1].diagram
+        h1_metrics = self._compute_h1_metrics(h1_diagram, total_nodes)
+
+        # 5b. H2 Domain-Bridging Metrics (P4 extension)
+        h2_metrics = self._compute_h2_metrics(h1_diagram, total_nodes)
+
+        # 6. 建议（加入 H1 健康度）
+        h1_health = h1_metrics.h1_health_score if not h1_metrics.suppressed else None
         recommendations = self._generate_recommendations(
-            drift, cluster_balance, orphan_ratio, avg_persistence
+            drift, cluster_balance, orphan_ratio, avg_persistence,
+            h1_health=h1_health, h1_suppressed=h1_metrics.suppressed,
+            betti_1=h1_metrics.betti_1_count,
+            h2_metrics=h2_metrics,
         )
 
         report = CalibrationReport(
@@ -371,6 +440,8 @@ class SelfAwareness:
             orphan_ratio=orphan_ratio,
             self_description_consistency=self_desc_consistency,
             recommendations=recommendations,
+            h1_metrics=h1_metrics,
+            h2_metrics=h2_metrics,
         )
         return report
 
@@ -427,8 +498,19 @@ class SelfAwareness:
         cluster_balance: float,
         orphan_ratio: float,
         avg_persistence: float,
+        h1_health: Optional[float] = None,
+        h1_suppressed: bool = False,
+        betti_1: int = 0,
+        h2_metrics: Optional["H2Metrics"] = None,
     ) -> List[str]:
-        """生成校准建议。"""
+        """生成校准建议。
+
+        Args:
+            h1_health: Normalized H1 health score (0-1). Higher = healthier geometry.
+            h1_suppressed: True if n < 13 (H1 metrics suppressed).
+            betti_1: Raw Betti-1 cycle count.
+            h2_metrics: H2Metrics dataclass for domain-bridging signal.
+        """
         recs = []
         if drift.status == "drifting":
             recs.append("System is drifting. Consider reviewing recent additions.")
@@ -440,9 +522,272 @@ class SelfAwareness:
             recs.append(f"High orphan ratio ({orphan_ratio:.2f}). Run update_topology to assign clusters.")
         if avg_persistence < 0.1:
             recs.append("Low average persistence. Knowledge may be too fragmented.")
+
+        # P4: H1 geometric quality recommendations
+        if h1_suppressed:
+            recs.append("H1 metrics suppressed: insufficient nodes (n < 13).")
+        elif h1_health is not None:
+            if h1_health < 0.3:
+                recs.append(
+                    f"H1 WARNING: Embedding geometry degraded (health={h1_health:.2f}, "
+                    f"betti_1={betti_1}). Embeddings may be too noisy/fragmented."
+                )
+            elif h1_health < 0.6:
+                recs.append(
+                    f"H1 CAUTION: Marginal embedding geometry (health={h1_health:.2f}, "
+                    f"betti_1={betti_1}). Monitor closely."
+                )
+            # Note: h1_health >= 0.6 is considered healthy, no recommendation needed
+
+        # H2 domain-bridging recommendations
+        if h2_metrics is not None and not h2_metrics.suppressed:
+            ratio = h2_metrics.h2_to_h1_ratio
+            if ratio > 0.3:
+                recs.append(
+                    f"H2 DOMAIN MIXING DETECTED: H2/H1={ratio:.2f} (>0.3). "
+                    f"Content from multiple domains may be interleaved."
+                )
+            elif ratio > 0.15:
+                recs.append(
+                    f"H2 CAUTION: H2/H1={ratio:.2f} (0.15-0.3). Minor domain overlap present."
+                )
+
         if not recs:
             recs.append("System healthy. No action needed.")
         return recs
+
+    def _extract_h1_from_diagram(self, diagram) -> Tuple[np.ndarray, int]:
+        """Extract H1 persistence values from a persistence diagram.
+
+        Returns:
+            (persistences, betti_1): np.ndarray of persistence values, Betti-1 count
+        """
+        if diagram is None or len(diagram) < 2:
+            return np.array([]), 0
+        h1 = diagram[1]  # H1 diagram
+        if len(h1) == 0:
+            return np.array([]), 0
+        # Filter finite deaths
+        finite = h1[np.isfinite(h1[:, 1])]
+        if len(finite) == 0:
+            return np.array([]), 0
+        persistences = finite[:, 1] - finite[:, 0]
+        return persistences, len(persistences)
+
+    def _compute_h1_metrics(
+        self,
+        diagram,
+        n_nodes: int,
+    ) -> H1Metrics:
+        """Compute H1 metrics from a persistence diagram.
+
+        This is the core P4 implementation: compute geometric quality
+        metrics from H1 persistent homology.
+
+        Key formula:
+            h1_health_score = mean_persistence / (1 + fragmentation_index)
+
+        Interpretation:
+            - High persistence + low fragmentation = healthy geometry
+            - Low persistence + high fragmentation = degraded / noisy embeddings
+        """
+        MIN_NODES_FOR_H1 = 13  # Below this, H1 is meaningless (P3 finding)
+
+        persistences, betti_1_count = self._extract_h1_from_diagram(diagram)
+
+        # Suppress H1 metrics when insufficient nodes
+        if n_nodes < MIN_NODES_FOR_H1 or betti_1_count == 0:
+            return H1Metrics(suppressed=True, betti_1_count=0)
+
+        # Persistence statistics
+        mean_p = float(np.mean(persistences))
+        max_p = float(np.max(persistences))
+        min_p = float(np.min(persistences))
+        std_p = float(np.std(persistences)) if len(persistences) > 1 else 0.0
+
+        # Fragmentation index: cycles per node
+        # High fragmentation = each node forms its own cycle (dense noise)
+        frag_index = betti_1_count / max(n_nodes, 1)
+
+        # Health score: persistence rewards real structure,
+        # fragmentation penalizes geometric dispersion/noise
+        health_score = mean_p / (1.0 + frag_index)
+
+        # H1 drift vs baseline (Wasserstein-1 on H1 diagrams)
+        h1_drift = 0.0
+        if self._baseline_diagram is not None:
+            h1_drift = float(
+                self._topo_engine.wasserstein_distance(
+                    diagram, self._baseline_diagram, dim=1
+                )
+            )
+
+        return H1Metrics(
+            betti_1_count=betti_1_count,
+            mean_h1_persistence=mean_p,
+            max_h1_persistence=max_p,
+            min_h1_persistence=min_p,
+            h1_persistence_std=std_p,
+            fragmentation_index=frag_index,
+            h1_health_score=health_score,
+            h1_drift_since_baseline=h1_drift,
+            suppressed=False,
+        )
+
+    def _extract_h2_from_diagram(self, diagram) -> Tuple[np.ndarray, int]:
+        """Extract H2 persistence values from a persistence diagram.
+
+        Returns:
+            (persistences, betti_2): np.ndarray of persistence values, Betti-2 count
+        """
+        if diagram is None or len(diagram) < 3:
+            return np.array([]), 0
+        h2 = diagram[2]  # H2 diagram
+        if len(h2) == 0:
+            return np.array([]), 0
+        # Filter finite deaths
+        finite = h2[np.isfinite(h2[:, 1])]
+        if len(finite) == 0:
+            return np.array([]), 0
+        persistences = finite[:, 1] - finite[:, 0]
+        return persistences, len(persistences)
+
+    def _compute_h2_metrics(
+        self,
+        diagram,
+        n_nodes: int,
+    ) -> H2Metrics:
+        """Compute H2 metrics from a persistence diagram.
+
+        H2 = 2D cavities. Key formula:
+            h2_health_score = mean_pers / (1 + fragmentation)
+            h2_to_h1_ratio = betti_2 / max(betti_1, 1)
+            cavitation_rate = betti_2 / C(n, 3)
+
+        Physical meaning:
+            - H2 emerges at domain boundaries (cross-domain cavities)
+            - H2/H1 ratio is the most sensitive domain-mixing indicator
+            - cavitation_rate normalizes by the theoretical maximum
+        """
+        MIN_NODES_FOR_H2 = 20  # Below this, H2 is unreliable
+
+        persistences, betti_2_count = self._extract_h2_from_diagram(diagram)
+
+        if n_nodes < MIN_NODES_FOR_H2 or betti_2_count == 0:
+            return H2Metrics(suppressed=True, betti_2_count=0)
+
+        # Persistence statistics
+        mean_p = float(np.mean(persistences))
+        max_p = float(np.max(persistences))
+        std_p = float(np.std(persistences)) if len(persistences) > 1 else 0.0
+
+        # Fragmentation index: H2 cavities per node
+        frag_index = betti_2_count / max(n_nodes, 1)
+
+        # Health score
+        health_score = mean_p / (1.0 + frag_index)
+
+        # H2/H1 ratio
+        _, betti_1_count = self._extract_h1_from_diagram(diagram)
+        h2_to_h1 = betti_2_count / max(betti_1_count, 1)
+
+        # Cavitation rate: normalized by theoretical maximum C(n, 3)
+        if n_nodes >= 3:
+            # C(n,3) = n*(n-1)*(n-2)/6
+            cavitation_rate = betti_2_count / max(1.0, n_nodes * (n_nodes - 1) * (n_nodes - 2) / 6)
+        else:
+            cavitation_rate = 0.0
+
+        # H2 drift vs baseline
+        h2_drift = 0.0
+        if self._baseline_diagram is not None:
+            h2_drift = float(
+                self._topo_engine.wasserstein_distance(
+                    diagram, self._baseline_diagram, dim=2
+                )
+            )
+
+        return H2Metrics(
+            betti_2_count=betti_2_count,
+            mean_h2_persistence=mean_p,
+            max_h2_persistence=max_p,
+            h2_persistence_std=std_p,
+            h2_health_score=health_score,
+            h2_to_h1_ratio=h2_to_h1,
+            cavitation_rate=cavitation_rate,
+            h2_drift_since_baseline=h2_drift,
+            suppressed=False,
+        )
+
+    def get_h1_health(self) -> float:
+        """返回当前的 H1 健康度评分（0.0-1.0+）。
+
+        Computed from the most recent diagram in history.
+        Higher = more geometrically healthy (fewer, more persistent cycles).
+
+        Returns 1.0 if no history or suppressed (n < 13).
+        """
+        if not self._diagram_history:
+            return 1.0
+
+        diagram = self._diagram_history[-1].diagram
+        n_nodes = self._get_current_cluster_count()
+        metrics = self._compute_h1_metrics(diagram, n_nodes)
+
+        if metrics.suppressed:
+            return 1.0  # No data = assume healthy
+
+        # Normalize health score to ~0-1 range
+        # Typical mean_pers ≈ 0.01-0.05, frag_index ≈ 0.1-0.5
+        # Health = p / (1+f) ≈ 0.01-0.04 range
+        # Map to 0-1 by dividing by 0.1 (very generous threshold)
+        normalized = min(metrics.h1_health_score / 0.1, 1.0)
+        return max(0.0, normalized)
+
+    def get_h1_metrics(self) -> H1Metrics:
+        """返回完整的 H1Metrics dataclass (包括 suppressed 状态)。"""
+        if not self._diagram_history:
+            return H1Metrics(suppressed=True)
+        diagram = self._diagram_history[-1].diagram
+        n_nodes = self._get_current_cluster_count()
+        return self._compute_h1_metrics(diagram, n_nodes)
+
+    def get_h1_drift(self) -> float:
+        """返回 H1 维度上的 Wasserstein 漂移（与基线的距离）。
+
+        Unlike the standard drift (H0), this tracks geometric changes
+        in cycle structure specifically.
+        """
+        if len(self._diagram_history) < 1 or self._baseline_diagram is None:
+            return 0.0
+        recent = self._diagram_history[-1].diagram
+        return float(self._topo_engine.wasserstein_distance(recent, self._baseline_diagram, dim=1))
+
+    def get_h2_metrics(self) -> H2Metrics:
+        """返回当前的 H2 指标（H2Metrics dataclass）。
+
+        H2 = 2D cavities = domain-bridging signal.
+        Key indicators:
+            - betti_2_count: number of 2D cavities
+            - h2_to_h1_ratio: most sensitive domain-mixing indicator
+            - cavitation_rate: normalized cavitation (betti_2 / C(n,3))
+            - h2_health_score: geometric quality of H2 structure
+
+        Returns suppressed=True H2Metrics if n < 20.
+        """
+        if not self._diagram_history:
+            return H2Metrics(suppressed=True)
+
+        diagram = self._diagram_history[-1].diagram
+        n_nodes = self._get_current_cluster_count()
+        return self._compute_h2_metrics(diagram, n_nodes)
+
+    def get_h2_drift(self) -> float:
+        """返回 H2 维度上的 Wasserstein 漂移（与基线的距离）。"""
+        if len(self._diagram_history) < 1 or self._baseline_diagram is None:
+            return 0.0
+        recent = self._diagram_history[-1].diagram
+        return float(self._topo_engine.wasserstein_distance(recent, self._baseline_diagram, dim=2))
 
     def should_calibrate(self) -> bool:
         """判断是否需要校准。"""

@@ -398,7 +398,99 @@ class EmbeddingConfig:
 
 ---
 
-## 11. 交接检查清单
+## 11. 研究发现 (2026-04-06)
+
+> 本节记录 2026-04-06 的系统性实验发现，是 TopoMem 的核心科学成果。
+
+### 11.1 H1/H2 物理含义（最重要结论）
+
+通过 A1（域分离敏感性）+ A2（域数量敏感性）+ A3（真实项目）+ P0（随机对照）+ P1（计算开销）五组实验的三角验证：
+
+```
+H1 = embedding 空间几何完整性签名（geometric integrity signature）
+     → 测量 embedding 点云的拓扑连通性变化
+     → 用途：监控 embedding 漂移、灾难性遗忘的早期信号
+
+H2 = 跨域边界复杂度指标（inter-domain boundary complexity）
+     → 测量 embedding 点云中 2D cavities 的数量
+     → cavity = 域边界区域（两个语义域之间的过渡带）
+     → 用途：检测语义域侵入、多域混合程度
+```
+
+**实验数据支撑**：
+
+| 实验 | 指标 | 结果 | p值 / Cohen's d |
+|------|------|------|-----------------|
+| A1: 分离 vs 混合域 | H2 count | +1.43 cycles | p<0.001, d=0.93 |
+| A2: 域数量敏感性 | H2 vs 域数 | Spearman r=0.926 | p<0.001 |
+| A3: 真实项目 | H2/H1 ratio | deer-flow=0.000, hermes=0.375 | 各不相同 |
+| P0: 随机对照 | REAL vs SHUFFLED | H2 无显著差异 | 几何现象 |
+| P1: 计算开销 | H2 overhead | <12ms at n=100 | 可接受 |
+
+### 11.2 H0 碎片化问题
+
+**发现**：VR filtration 在所有维度（5D-384D，含 UMAP 降维后）都产生 H0/n = 1.000（每个点完全孤立）。
+
+**根本原因**：Cosine metric 在单位球上，每个点的 H0 birth = 0。VR filtration 没有语义分辨率。
+
+**对检索的影响**：
+- H0 TDA 在 cosine metric + 384D 空间里**不提供检索增益**
+- 所有方法（PureVec / TopoMem-Hybrid / kNN）在 deer-flow 语料上打平
+- Cosine similarity 本身已经足够区分这些测试域
+
+### 11.3 H1/H2 集成代码
+
+**config.py**: `max_homology_dim` 默认值 1 → 2
+
+**self_awareness.py** 新增：
+- `H1Metrics` dataclass: betti_1_count, mean_h1_persistence, fragmentation_index, h1_health_score
+- `H2Metrics` dataclass: betti_2_count, h2_to_h1_ratio, cavitation_rate, h2_health_score
+- `_compute_h1_metrics()`: MIN_NODES_FOR_H1 = 13
+- `_compute_h2_metrics()`: MIN_NODES_FOR_H2 = 20
+- `calibrate()`: 在 CalibrationReport 中包含 h1_metrics 和 h2_metrics
+
+**system.py** 新增：
+- `SystemMetrics`: h1_health, h2_health, h2_drift, h2_suppressed, h2_to_h1_ratio, betti_2_count
+- `get_metrics()` / `get_status()`: 返回 H1/H2 指标
+
+### 11.4 诚实解读原则
+
+```python
+# ✅ 正确
+if h1_health < 0.3: return "几何降级"
+if h2_to_h1_ratio > 0.25: return "域边界复杂度增加"
+
+# ❌ 错误
+if h2_count > baseline: return "新增语义知识"  # H2 不测语义！
+```
+
+### 11.5 UMAP 降维实验（A4，部分完成）
+
+- UMAP(384D → 5D/10D/15D/20D/30D) **没有解决** H0 碎片化问题
+- UMAP(30D) 实际上**降低了** H2 的域敏感性（d 从 0.93 降到 0.46）
+- 环境障碍：torch 在 Python 3.14 venv 无法加载（DLL 依赖）
+
+### 11.6 TopoMem 最终定位
+
+```
+TopoMem = 多维拓扑健康监控系统
+├── H0: 功能模块划分（via ChromaDB clustering）
+├── H1: 嵌入空间几何完整性指标
+│   └── 用途：监控 embedding 漂移 / 灾难性遗忘早期信号
+└── H2: 跨域边界复杂度指标
+    └── 用途：检测语义域侵入 / 多域混合程度
+```
+
+**重要**：H1/H2 不改进检索精度，但提供检索系统无法提供的**几何健康信号**。
+
+### 11.7 详细文档
+
+- 完整交接: `F:\unified-sel\topomem\HANDOFF_20260406.md`
+- 今日记忆: `F:\.openclaw\workspace\memory\2026-04-06.md`
+
+---
+
+## 12. 交接检查清单
 
 接手本项目前，请确认：
 

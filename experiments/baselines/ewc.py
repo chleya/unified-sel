@@ -152,8 +152,48 @@ def run_experiment(seed: int = 7) -> dict:
 
 
 def main() -> None:
-    result = run_experiment()
-    print(json.dumps(result, indent=2))
+    import argparse
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--seeds", type=int, default=1, help="Number of seeds to run")
+    parser.add_argument("--start-seed", type=int, default=7, help="Starting seed")
+    args = parser.parse_args()
+
+    runs = []
+    for i in range(args.seeds):
+        seed = args.start_seed + i
+        print(f"Running EWC with seed {seed}...")
+        result = run_experiment(seed)
+        runs.append(result)
+
+    # Calculate aggregate stats
+    forgettings = [run['forgetting_task_0'] for run in runs]
+    task_0_acc = [run['task_0_accuracy_after_task_1'] for run in runs]
+    task_1_acc = [run['task_1_accuracy_after_task_1'] for run in runs]
+
+    aggregate = {
+        "mean_forgetting": float(np.mean(forgettings)),
+        "std_forgetting": float(np.std(forgettings)),
+        "mean_task_0_accuracy": float(np.mean(task_0_acc)),
+        "std_task_0_accuracy": float(np.std(task_0_acc)),
+        "mean_task_1_accuracy": float(np.mean(task_1_acc)),
+        "std_task_1_accuracy": float(np.std(task_1_acc)),
+    }
+
+    final_result = {
+        "experiment": "baseline_ewc",
+        "seeds": args.seeds,
+        "start_seed": args.start_seed,
+        "runs": runs,
+        "aggregate": aggregate,
+        "timestamp": timestamp(),
+    }
+
+    results_dir = get_results_path("baseline_ewc")
+    output_path = results_dir / f"{timestamp()}_multi_seed.json"
+    save_json(final_result, output_path)
+    final_result["saved_to"] = str(output_path)
+    
+    print(json.dumps(final_result, indent=2))
 
 
 if __name__ == "__main__":

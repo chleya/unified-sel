@@ -132,7 +132,7 @@ class TestTopologyEngine:
         """0 个或 1 个点 → 返回空 diagram"""
         points = np.array([[1.0, 2.0]])
         diagram = engine.compute_persistence(points)
-        assert len(diagram) == 2
+        assert len(diagram) >= 2  # H0+H1 min, +H2 if max_homology_dim>=2
         assert len(diagram[0]) == 0
         assert len(diagram[1]) == 0
 
@@ -140,7 +140,7 @@ class TestTopologyEngine:
         """2 个点 → H0 有一个 merge 事件"""
         points = np.array([[0.0, 0.0], [10.0, 0.0]])
         diagram = engine.compute_persistence(points)
-        assert len(diagram) == 2
+        assert len(diagram) >= 2  # H0+H1 min, +H2 if max_homology_dim>=2
         # H0 应至少有一个点
         assert len(diagram[0]) >= 1
 
@@ -327,7 +327,7 @@ class TestTopologyEngine:
         result = engine.compute_full_result(points)
 
         assert isinstance(result, TopologyResult)
-        assert len(result.diagram) == 2
+        assert len(result.diagram) >= 2  # H0+H1 min, +H2 if max_homology_dim>=2
         assert isinstance(result.features, list)
         assert result.fingerprint.shape == (100,)
         assert result.n_clusters >= 1

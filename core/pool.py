@@ -79,6 +79,11 @@ class StructurePool:
         if len(best_structure.surprise_history) > 20:
             best_structure.surprise_history.pop(0)
 
+        # 计算当前阶段和平均张力
+        is_mid_late_phase = self.step_count > 200  # 200步后进入中晚期
+        avg_tension = float(np.mean([s.tension for s in self.structures])) if self.structures else 0.0
+        is_high_pressure = best_surprise > self.surprise_threshold * 0.7 and avg_tension > 0.3
+
         low_threshold = self.surprise_threshold * 0.5
         if best_surprise < low_threshold:
             best_structure.reinforce(self.reinforce_amount)
@@ -97,9 +102,24 @@ class StructurePool:
                 self.total_creates += 1
                 event = "branch"
             else:
-                best_structure.reinforce(self.reinforce_amount * 0.5)
-                event = "reinforce"
-                active = best_structure
+                # 中晚期高压力时的特殊处理
+                if is_mid_late_phase and is_high_pressure:
+                    # 增强成熟结构的稳定性
+                    mature_structures = [s for s in self.structures if s.age >= self.mature_age]
+                    if mature_structures:
+                        # 选择最成熟的结构作为active，增强其效用
+                        mature_structure = max(mature_structures, key=lambda s: s.age)
+                        mature_structure.reinforce(self.reinforce_amount * 0.8)
+                        active = mature_structure
+                        event = "boundary_stabilize"
+                    else:
+                        best_structure.reinforce(self.reinforce_amount * 0.7)
+                        active = best_structure
+                        event = "reinforce"
+                else:
+                    best_structure.reinforce(self.reinforce_amount * 0.5)
+                    event = "reinforce"
+                    active = best_structure
         else:
             if len(self.structures) < self.max_structures:
                 active = self._new_structure(label=f"new_{self._next_id}")
@@ -107,9 +127,23 @@ class StructurePool:
                 self.total_creates += 1
                 event = "create"
             else:
-                best_structure.reinforce(self.reinforce_amount * 0.3)
-                event = "reinforce"
-                active = best_structure
+                # 中晚期高压力时的特殊处理
+                if is_mid_late_phase and is_high_pressure:
+                    # 增强成熟结构的稳定性
+                    mature_structures = [s for s in self.structures if s.age >= self.mature_age]
+                    if mature_structures:
+                        mature_structure = max(mature_structures, key=lambda s: s.age)
+                        mature_structure.reinforce(self.reinforce_amount * 0.6)
+                        active = mature_structure
+                        event = "boundary_stabilize"
+                    else:
+                        best_structure.reinforce(self.reinforce_amount * 0.4)
+                        active = best_structure
+                        event = "reinforce"
+                else:
+                    best_structure.reinforce(self.reinforce_amount * 0.3)
+                    event = "reinforce"
+                    active = best_structure
 
         self._decay_all()
         if self.step_count % 50 == 0:

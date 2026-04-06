@@ -400,3 +400,28 @@ Template:
   - mean stability score rose from `0.0900` to `0.1083`
 - the routing gate fired often enough to matter, especially on seeds `8/9/10`, but the effect looked like shared adaptation bias, not stable endogenous boundary formation
 **Next Step**: keep the mature-retention version as the code baseline and look for mechanisms that change pressure scheduling or credit assignment without simply shifting bias from one task side to the other
+
+---
+
+## 2026-04-05 Boundary Stabilization Mechanism
+
+**Command**:
+- `python F:\unified-sel\tests\smoke_test.py`
+- `python F:\unified-sel\experiments\continual\no_boundary.py --seeds 5 --max-structures 12 --window-size 50`
+- `python F:\unified-sel\analysis\boundary_diagnostics.py --input F:\unified-sel\results\continual_no_boundary\20260405_212820.json`
+- `python F:\unified-sel\experiments\baselines\ewc.py --seeds 5 --start-seed 7`
+**Parameters changed**:
+- added boundary stabilization mechanism in `core/pool.py`:
+  - when pool is full and in mid/late phase with high pressure, prioritize mature structures
+  - introduce new event type "boundary_stabilize"
+  - enhance utility of mature structures during high pressure
+**Result**:
+- main run saved to `F:\unified-sel\results\continual_no_boundary\20260405_212820.json`
+- boundary report saved to `F:\unified-sel\results\analysis_boundary\20260405_212848.json`
+- EWC multi-seed baseline saved to `F:\unified-sel\results\baseline_ewc\20260405_213122_multi_seed.json`
+- smoke test passed
+**Issues / Observations**:
+- new "boundary_stabilize" events are visible in late phase, indicating the mechanism is active
+- EWC multi-seed baseline shows mean forgetting: `0.0328`, mean task 0 accuracy: `0.8664`
+- Unified-SEL now has comparable statistical power with 5 seeds
+**Next Step**: analyze the detailed results to compare Unified-SEL with EWC baseline and further optimize the boundary stabilization mechanism

@@ -103,6 +103,16 @@ class SystemMetrics:
     current_cluster_count: int = 0
     current_adapter_count: int = 0
 
+    # H1 geometric quality (P4)
+    h1_health: float = 1.0
+    h1_drift: float = 0.0
+    # H2 domain-bridging (P4 extension)
+    betti_2_count: int = 0
+    h2_to_h1_ratio: float = 0.0
+    h2_health: float = 1.0
+    h2_drift: float = 0.0
+    cavitation_rate: float = 0.0
+
     def to_dict(self) -> dict:
         """转换为可序列化的字典（包含计算字段）。"""
         total_tda = self.tda_cache_hits + self.tda_cache_misses
@@ -139,6 +149,15 @@ class SystemMetrics:
             "current_node_count": self.current_node_count,
             "current_cluster_count": self.current_cluster_count,
             "current_adapter_count": self.current_adapter_count,
+            # H1 geometric quality (P4)
+            "h1_health": round(self.h1_health, 3) if hasattr(self, 'h1_health') else 1.0,
+            "h1_drift": round(self.h1_drift, 4) if hasattr(self, 'h1_drift') else 0.0,
+            # H2 domain-bridging (P4 extension)
+            "betti_2_count": self.betti_2_count,
+            "h2_to_h1_ratio": round(self.h2_to_h1_ratio, 4),
+            "h2_health": round(self.h2_health, 4),
+            "h2_drift": round(self.h2_drift, 4),
+            "cavitation_rate": round(self.cavitation_rate, 4),
         }
 
 
@@ -154,6 +173,13 @@ class SystemStatus:
     last_calibration_step: int
     ram_usage_mb: float
     fingerprint_shape: Optional[tuple]
+    h1_health: float = 1.0          # H1 geometric health score (P4)
+    h1_drift: float = 0.0           # H1 drift vs baseline (P4)
+    # H2 domain-bridging (P4 extension)
+    betti_2_count: int = 0
+    h2_to_h1_ratio: float = 0.0
+    h2_health: float = 1.0
+    h2_drift: float = 0.0
 
 
 # ------------------------------------------------------------------
@@ -450,6 +476,10 @@ class TopoMemSystem:
             fp = self.self_aware._fingerprint_history[-1].fingerprint
 
         drift = self.self_aware.detect_drift()
+        h1_m = self.self_aware.get_h1_metrics()
+        h1_health = h1_m.h1_health_score if not h1_m.suppressed else 1.0
+        h1_drift = self.self_aware.get_h1_drift()
+        h2_m = self.self_aware.get_h2_metrics()
 
         return SystemStatus(
             step=self._step,
@@ -460,6 +490,12 @@ class TopoMemSystem:
             last_calibration_step=self._last_calibration_step,
             ram_usage_mb=ram_mb,
             fingerprint_shape=fp.shape if fp is not None else None,
+            h1_health=h1_health,
+            h1_drift=h1_drift,
+            betti_2_count=h2_m.betti_2_count,
+            h2_to_h1_ratio=h2_m.h2_to_h1_ratio,
+            h2_health=h2_m.h2_health_score,
+            h2_drift=h2_m.h2_drift_since_baseline,
         )
 
     def get_metrics(self) -> dict:
@@ -469,6 +505,17 @@ class TopoMemSystem:
         m.current_node_count = self.memory.node_count()
         m.current_cluster_count = len(self.memory._get_all_cluster_ids())
         m.current_adapter_count = self.adapters.adapter_count
+        # P4: H1 geometric quality snapshot
+        h1_m = self.self_aware.get_h1_metrics()
+        m.h1_health = h1_m.h1_health_score if not h1_m.suppressed else 1.0
+        m.h1_drift = self.self_aware.get_h1_drift()
+        # P4+: H2 domain-bridging snapshot
+        h2_m = self.self_aware.get_h2_metrics()
+        m.betti_2_count = h2_m.betti_2_count
+        m.h2_to_h1_ratio = h2_m.h2_to_h1_ratio
+        m.h2_health = h2_m.h2_health_score
+        m.h2_drift = h2_m.h2_drift_since_baseline
+        m.cavitation_rate = h2_m.cavitation_rate
         return m.to_dict()
 
     def save(self, path: str) -> None:

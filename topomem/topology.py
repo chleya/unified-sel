@@ -475,10 +475,10 @@ class TopologyEngine:
         # 计算相邻差值
         gaps = np.diff(deaths)
 
-        # 最大 gap 处
+        # 最大 gap 处，返回 gap 中间位置（而非 gap 左侧）
         if len(gaps) > 0 and np.max(gaps) > 0:
             idx = np.argmax(gaps)
-            return float(deaths[idx])
+            return float((deaths[idx] + deaths[idx + 1]) / 2)
 
         return float(np.median(deaths))
 
