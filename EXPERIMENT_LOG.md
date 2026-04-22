@@ -5454,6 +5454,41 @@ Updated:
 
 **结果文件**: `results/capability_benchmark/cross_domain_llm_1776887882.json`
 
+---
+
+## 2026-04-22 Domain-Aware Routing (BatchHealthMonitor + No-Revision Triage)
+
+**类型**: Domain-aware routing experiment
+
+**目标**: 用 BatchHealthMonitor 漂移信号修复跨域场景下 monitor_no_revision_triage 的性能下降
+
+**方法**: 新增 `domain_aware_no_revision_triage` 协议 — 当 BatchHealthMonitor 检测到域漂移时，对验证失败的错误答案直接 escalate，不再依赖 monitor signal
+
+### 跨域结果 (code-20 + reasoning-40)
+
+| 策略 | Semantic | Counterfactual | Revisions |
+|------|:-------:|:------------:|:---------:|
+| monitor_no_revision_triage | 50% | 45% | 0 |
+| **domain_aware_no_revision_triage** | **65%** | **60%** | **0** |
+| verifier_first | 100% | 100% | 38-39 |
+
+### 改进分析
+
+- domain_aware 比 baseline 提升 **+15%** (semantic) / **+15%** (counterfactual)
+- 仍然零 revision 调用
+- 未达 100% 的原因: BatchHealthMonitor 需要几个 reasoning 任务才能检测到域漂移，前几个任务仍走 accept_low_signal
+
+### 根因
+
+reasoning 任务的 semantic/counterfactual monitor signal 天然偏低 (0.22-0.24)，低于 low_floor (0.35)，被误判为"安全"。BatchHealthMonitor 的质心漂移在看到 3-5 个 reasoning 任务后触发域漂移检测，后续任务自动 escalate。
+
+### 下一步
+
+- 降低 BatchHealthMonitor warmup window 加速漂移检测
+- 或在前 N 个任务使用 verifier_first，检测到稳定后切换到 no-revision triage
+
+**结果文件**: `results/capability_benchmark/cross_domain_llm_1776889890.json`
+
 Deleted generated temp/cache directories:
 
 - `.pytest_cache/`

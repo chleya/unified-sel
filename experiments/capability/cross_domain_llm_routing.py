@@ -36,7 +36,7 @@ def main():
     solver = LlamaCppSolver(base_url="http://127.0.0.1:8081")
 
     monitor_names = ["semantic", "counterfactual"]
-    protocols = ["local_only", "monitor_no_revision_triage", "verifier_first"]
+    protocols = ["local_only", "monitor_no_revision_triage", "domain_aware_no_revision_triage", "verifier_first"]
 
     print("\n[3/3] Running experiments...")
     all_results = {}
