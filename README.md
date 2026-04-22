@@ -1,5 +1,10 @@
 # Unified-SEL
 
+> Current project map: see `PROJECT_OVERVIEW_AND_INDEX_2026-04-22.md`.
+> Current scope lock and upload batches: see `MAINLINE_SCOPE_LOCK_2026-04-22.md`.
+> Learned governance design draft: see `LEARNED_STATE_GOVERNANCE_SPEC_2026-04-22.md`.
+> The original README below describes the early mechanism-track framing; the project has since pivoted to Capability Router + boundary-local amplification.
+
 Unified-SEL is a research codebase for continual learning without explicit task-boundary signals.
 
 Its core hypothesis is:
