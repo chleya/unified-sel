@@ -5417,6 +5417,43 @@ Updated:
 
 **结果文件**: `results/capability_benchmark/llm_routing_1776864893.json`
 
+---
+
+## 2026-04-22 Cross-Domain LLM Routing (Code + Reasoning)
+
+**类型**: Cross-domain real-LLM routing experiment
+
+**目标**: 验证 monitor_no_revision_triage 在跨域场景下的鲁棒性
+
+**模型**: Qwen2.5-0.5B-Instruct (Q4_K_M) via llama.cpp server
+
+**任务**: code-20 + reasoning-20 = 40 个混合任务
+
+### 结果
+
+| Monitor | local_only | monitor_no_revision_triage | verifier_first |
+|---------|:---------:|:------------------------:|:------------:|
+| semantic | 5% (2/40) | **50% (20/40)** | 100% (40/40) |
+| counterfactual | 2% (1/40) | **45% (18/40)** | 100% (40/40) |
+
+### 关键发现
+
+1. **跨域性能下降**: monitor_no_revision_triage 从纯 code 的 100% 降到跨域的 50%/45%
+2. **原因**: escalation 阈值 (0.9) 对 reasoning 任务过高，很多错误任务的 signal 未达 escalation 阈值
+3. **verifier_first 仍 100%**: 因为它对每个任务都做验证+escalation
+4. **0.5B 模型在 reasoning 任务上 base rate 极低**: local_only 只有 2-5%
+
+### 与纯 code 场景对比
+
+| 场景 | monitor_no_revision_triage (semantic) | verifier_first |
+|------|:-----------------------------------:|:------------:|
+| 纯 code-20 | 100% (20/20) | 100% (20/20) |
+| 跨域 code+reasoning | 50% (20/40) | 100% (40/40) |
+
+**结论**: monitor_no_revision_triage 的优势限于 code 域。跨域场景需要动态调整 escalation 阈值或域感知路由。
+
+**结果文件**: `results/capability_benchmark/cross_domain_llm_1776887882.json`
+
 Deleted generated temp/cache directories:
 
 - `.pytest_cache/`
