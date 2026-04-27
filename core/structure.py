@@ -1,12 +1,18 @@
 """
-core/structure.py — 核心数据结构
+core/structure.py — Archived DFA structure unit
 
-Structure 是系统的基本单元，对应人脑中的一个功能性神经回路。
+This module is kept for backward compatibility (smoke tests).
+It implements a small Direct Feedback Alignment (DFA) network unit
+with local readout and anchor-based regularization.
 
-设计来源：
-- SDAS/src/structure_pool.py: utility, surprise_history, action_values 概念
-- SEL-Lab/core/sel_core.py: tension 计算，DFA 权重结构
-- FCRS/src/fcrs/types.py: 严格的类型验证
+Design sources:
+- SDAS/src/structure_pool.py
+- SEL-Lab/core/sel_core.py
+- FCRS/src/fcrs/types.py
+
+NOTE: The "surprise", "tension", and "utility" terminology below is
+legacy nomenclature from the original SEL-Lab project. These are
+simply input-novelty, loss-plateau, and activation-frequency signals.
 """
 
 from __future__ import annotations
@@ -32,52 +38,95 @@ class Structure:
     feedback: np.ndarray        # DFA 反馈矩阵 [out_size, out_size]
     label: str = ""             # 可读标签（如"任务A"、"避障"）
 
-    # 进化信号
-    tension: float = 0.3        # 学习饱和度 [0,1]，高则需要 clone
-    utility: float = 1.0        # 效用值 [0,1]，低则被淘汰
-    age: int = 0                # 生存步数
+    # Lifecycle signals (legacy terminology from SEL-Lab)
+    tension: float = 0.3        # Loss-plateau signal [0,1]; high → trigger clone
+    utility: float = 1.0        # Activation-frequency signal [0,1]; low → prune
+    age: int = 0                # Training steps survived
 
-    # 惊讶度历史（SDAS 的核心创新）
+    # Input-novelty history (legacy: "surprise_history")
     surprise_history: List[float] = field(default_factory=list)
 
-    # 损失历史（用于计算 tension）
+    # Loss history (used to compute tension)
     loss_history: List[float] = field(default_factory=list)
 
     # 动量（DFA 学习用）
     velocity: Optional[np.ndarray] = field(default=None, repr=False)
+    local_readout: Optional[np.ndarray] = field(default=None, repr=False)
+    local_readout_velocity: Optional[np.ndarray] = field(default=None, repr=False)
+    local_readout_episode_steps_remaining: int = 0
+
+    anchor: Optional[np.ndarray] = field(default=None, repr=False)
+    anchor_fisher: Optional[np.ndarray] = field(default=None, repr=False)
+    anchor_set: bool = False
+    frozen: bool = False
 
     def __post_init__(self):
         if self.velocity is None:
             self.velocity = np.zeros_like(self.weights)
+        if self.local_readout is None:
+            self.local_readout = np.zeros((self.weights.shape[1], self.feedback.shape[0]), dtype=float)
+        if self.local_readout_velocity is None:
+            self.local_readout_velocity = np.zeros_like(self.local_readout)
 
     # ------------------------------------------------------------------
     # 核心信号计算
     # ------------------------------------------------------------------
 
-    def current_surprise(self, observation: np.ndarray) -> float:
+    def current_surprise(self, observation: np.ndarray, label: int = None, out_size: int = 2) -> float:
         """
-        计算当前输入对本结构的陌生程度（惊讶度）。
+        Compute input-novelty score for the current observation-label pair.
 
-        用余弦距离衡量：observation 和 weights 的第一主方向有多不同。
-        返回值 [0, 1]，越高越陌生。
+        Components:
+        1. Input novelty: cosine distance between observation and weight prototype
+        2. Prediction error: if label provided, compute prediction mismatch
+
+        Returns value in [0, 1]; higher = more novel.
         """
         obs = observation.flatten()
-        # 用权重的列均值作为结构的"原型"向量
+
+        # 1. Input novelty
         prototype = np.mean(self.weights, axis=1)
         norm_obs = np.linalg.norm(obs)
         norm_proto = np.linalg.norm(prototype)
         if norm_obs < 1e-8 or norm_proto < 1e-8:
-            return 1.0
-        cosine_sim = np.dot(obs, prototype) / (norm_obs * norm_proto)
-        # 相似度 → 陌生度
-        return float(np.clip(1.0 - cosine_sim, 0.0, 1.0))
+            input_novelty = 1.0
+        else:
+            cosine_sim = np.dot(obs, prototype) / (norm_obs * norm_proto)
+            input_novelty = float(np.clip(1.0 - cosine_sim, 0.0, 1.0))
+
+        # 2. If no label provided, return input novelty only
+        if label is None:
+            return input_novelty
+
+        # 3. Prediction error
+        hidden = self.forward(np.atleast_2d(obs))
+        output = hidden.flatten()[:out_size]
+
+        # Softmax
+        output_shifted = output - np.max(output)
+        exp_output = np.exp(output_shifted)
+        probs = exp_output / (np.sum(exp_output) + 1e-8)
+
+        # Predicted label
+        predicted_label = int(np.argmax(probs))
+
+        # If mispredicted, increase novelty
+        if predicted_label != label:
+            prediction_novelty = 1.0
+        else:
+            # Even if correct, low confidence contributes some novelty
+            prediction_novelty = 1.0 - probs[label]
+
+        # Combine both novelty signals (weighted average)
+        return 0.3 * input_novelty + 0.7 * prediction_novelty
 
     def update_tension(self, loss: float, window: int = 8) -> None:
         """
-        更新张力值。
+        Update loss-plateau signal (legacy: "tension").
 
-        张力 = 损失高原程度。如果损失长期不下降，张力升高。
-        来源：SEL-Lab core/sel_core.py SELModule._update_tension
+        Plateau = degree of loss stagnation. If loss does not decrease over time,
+        plateau signal rises.
+        Source: SEL-Lab core/sel_core.py SELModule._update_tension
         """
         self.loss_history.append(loss)
         if len(self.loss_history) > window:
@@ -93,22 +142,60 @@ class Structure:
         avg_improvement = float(np.mean(improvements))
         min_improvement = 1e-4
 
-        # 高原分数：改进越少，张力越高
+        # Plateau score: less improvement → higher plateau signal
         plateau = max(0.0, min_improvement - avg_improvement) / max(min_improvement, 1e-8)
         plateau = float(np.clip(plateau, 0.0, 1.0))
 
-        # 残差：当前损失本身
+        # Residual: current loss magnitude
         residual = float(np.tanh(np.mean(self.loss_history)))
 
         self.tension = float(0.6 * plateau + 0.4 * residual)
 
     def decay_utility(self, rate: float = 0.002) -> None:
-        """每步缓慢衰减效用。不被激活的结构逐渐失去影响力。"""
+        """Slowly decay activation-frequency signal (legacy: "utility").
+        Inactive structures gradually lose influence."""
         self.utility = max(0.0, self.utility - rate)
 
     def reinforce(self, amount: float = 0.05) -> None:
-        """被激活时增加效用。"""
+        """Increase activation-frequency signal when activated."""
         self.utility = min(1.0, self.utility + amount)
+
+    def set_anchor(self) -> None:
+        """Freeze current weights as anchor. Source: SEL-Lab phase3_model.py:1354-1367"""
+        self.anchor = self.weights.copy()
+        self.anchor_set = True
+
+    def estimate_anchor_fisher(self, X: np.ndarray, y: np.ndarray, out_size: int) -> None:
+        if not self.anchor_set:
+            return
+        fisher = np.zeros_like(self.weights)
+        w_cols = self.weights.shape[1]
+        for i in range(len(X)):
+            x_i = X[i].flatten()
+            hidden = self.forward(np.atleast_2d(x_i))
+            output = hidden.flatten()[:w_cols]
+            y_i = np.atleast_1d(y[i]).flatten()
+            if y_i.shape[0] == 1:
+                target = np.zeros(w_cols)
+                idx = int(y_i[0]) if int(y_i[0]) < w_cols else 0
+                target[idx] = 1.0
+            else:
+                target = np.zeros(w_cols)
+                for j in range(min(len(y_i), w_cols)):
+                    target[j] = float(y_i[j])
+            error = target - output
+            grad = np.outer(x_i, error)
+            fisher += grad ** 2
+        fisher /= max(len(X), 1)
+        self.anchor_fisher = np.clip(fisher, 0.0, 5.0)
+
+    def anchor_penalty(self, anchor_lambda: float = 1.0) -> np.ndarray:
+        """计算锚点正则化梯度。距离越远拉力越大。来源：SEL-Lab phase3_model.py:1354-1367"""
+        if not self.anchor_set or self.anchor is None:
+            return np.zeros_like(self.weights)
+        if self.anchor_fisher is not None:
+            return anchor_lambda * self.anchor_fisher * (self.anchor - self.weights)
+        return anchor_lambda * (self.anchor - self.weights)
 
     # ------------------------------------------------------------------
     # DFA 前向学习
@@ -125,28 +212,53 @@ class Structure:
         output_error: np.ndarray,
         lr: float = 0.05,
         momentum: float = 0.9,
+        anchor_lambda: float = 0.0,
     ) -> float:
         """
-        DFA（直接反馈对齐）学习步骤。不需要反向传播。
+        DFA (Direct Feedback Alignment) learning step. No backpropagation needed.
 
-        来源：SEL-Lab core/sel_core.py SELModule.forward_learning
+        Source: SEL-Lab core/sel_core.py SELModule.forward_learning
         """
         x = np.atleast_2d(x)
         output_error = np.atleast_2d(output_error)
 
-        # DFA：用固定随机反馈矩阵投影误差到隐层
         fb_error = (self.feedback.T @ output_error.T).T
         grad = x.T @ fb_error
 
-        # 带动量的梯度更新
+        if anchor_lambda > 0:
+            grad += self.anchor_penalty(anchor_lambda)
+
+        loss = float(np.mean(output_error ** 2))
+
+        if self.frozen:
+            self.age += 1
+            return loss
+
         self.velocity = momentum * self.velocity + lr * grad
         self.weights += self.velocity
         self.weights = np.clip(self.weights, -2.0, 2.0)
 
-        loss = float(np.mean(output_error ** 2))
         self.age += 1
         self.update_tension(loss)
         return loss
+
+    def readout(self, hidden: np.ndarray) -> np.ndarray:
+        hidden = np.atleast_2d(hidden)
+        return hidden @ self.local_readout
+
+    def learn_readout(
+        self,
+        hidden: np.ndarray,
+        output_error: np.ndarray,
+        lr: float = 0.05,
+        momentum: float = 0.9,
+    ) -> None:
+        hidden = np.atleast_2d(hidden)
+        output_error = np.atleast_2d(output_error)
+        grad = hidden.T @ output_error
+        self.local_readout_velocity = momentum * self.local_readout_velocity + lr * grad
+        self.local_readout += self.local_readout_velocity
+        self.local_readout = np.clip(self.local_readout, -2.0, 2.0)
 
     # ------------------------------------------------------------------
     # 结构演化操作
@@ -154,8 +266,8 @@ class Structure:
 
     def clone(self, new_id: int, perturbation: float = 0.05, rng=None) -> "Structure":
         """
-        克隆自身，加上小扰动。用于 tension 触发的结构分裂。
-        来源：SEL-Lab SELModule.clone
+        Clone self with small perturbation. Used for loss-plateau-triggered splitting.
+        Source: SEL-Lab SELModule.clone
         """
         if rng is None:
             rng = np.random.default_rng()
@@ -169,6 +281,8 @@ class Structure:
             tension=self.tension * 0.7,
             utility=0.5,
             age=0,
+            local_readout=self.local_readout.copy(),
+            local_readout_episode_steps_remaining=0,
         )
 
     def __repr__(self) -> str:

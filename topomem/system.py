@@ -41,6 +41,7 @@ from topomem.config import TopoMemConfig
 from topomem.embedding import EmbeddingManager
 from topomem.engine import ReasoningEngine, extract_knowledge
 from topomem.guard import ConsistencyGuard
+from topomem.health_controller import TopologyHealthController, HealthControllerConfig
 from topomem.memory import MemoryGraph, MemoryNode
 from topomem.self_awareness import SelfAwareness
 from topomem.topology import TopologyEngine
@@ -211,6 +212,12 @@ class TopoMemSystem:
         # 3. Memory
         self.memory = MemoryGraph(self.config.memory, self.embedding)
 
+        # 3.5 Health ECU
+        ec_config = HealthControllerConfig(
+            h1_action_threshold=self.config.h1_health_action_threshold,
+        )
+        self._health_controller = TopologyHealthController(ec_config)
+
         # 4. Reasoning Engine
         self.engine = ReasoningEngine(self.config.engine)
 
@@ -250,8 +257,17 @@ class TopoMemSystem:
             query_embedding, self.memory
         )
 
-        # ---- Step 3: 检索记忆 ----
-        strategy = "hybrid"
+        # ---- Step 3: 检索记忆（策略由 ECU 动态决定）----
+        # GREEN/YELLOW → 优先速度（vector）；ORANGE/RED → 优先抗噪（topological）
+        health_status = self.memory.get_health_status()
+        trend_dir = health_status.trend.direction if health_status.trend else None
+        if trend_dir in ("orange", "red"):
+            strategy = "topological"
+        elif trend_dir == "yellow":
+            strategy = "hybrid"
+        else:
+            strategy = "vector"  # GREEN: 最快策略
+
         retrieved = self.memory.retrieve(
             query_embedding,
             strategy=strategy,
@@ -350,6 +366,38 @@ class TopoMemSystem:
                 logger.warning(f"Calibration failed: {e}")
                 drift_report = self.self_aware.detect_drift()
                 drift_status = drift_report.status
+
+        # ---- Health ECU: 综合健康状态→行动闭环 ----
+        health_status = self.memory.get_health_status()
+        diag = self._health_controller.get_diagnostic_info(health_status)
+
+        # 提前干预：趋势恶化但还没触发阈值
+        if self._health_controller.should_early_intervene(health_status):
+            trend = health_status.trend
+            fault_codes = [r["code"] for r in self.memory.get_fault_log(5)]
+            logger.warning(
+                f"[ECU] C004 TREND ALERT | direction={trend.direction.value} "
+                f"slope={trend.slope:+.4f} score={health_status.health_score:.3f} "
+                f"est={trend.steps_until_consolidation} steps | faults={fault_codes}"
+            )
+            # 提前干预：轻量级 prune + retrieval 调整，不触发完整 consolidation
+            self.memory.prune(aggressiveness=0.1)
+
+        # 正式 consolidation 触发
+        elif self._health_controller.should_consolidate(health_status):
+            fault_codes = [r["code"] for r in self.memory.get_fault_log(5)]
+            logger.warning(
+                f"[ECU] C003 HEALTH THRESHOLD | score={health_status.health_score:.3f} "
+                f"threshold={health_status.consolidate_threshold:.3f} "
+                f"faults={fault_codes}"
+            )
+            self.consolidation_pass(
+                orphan_threshold=0.05,
+                merge_centroid_threshold=self.config.consolidation_merge_threshold,
+                update_topology=True,
+            )
+            # consolidation 后重置历史
+            self._health_controller.reset_history()
 
         # ---- 构造结果 ----
         elapsed_ms = (time.time() - start_time) * 1000
@@ -498,6 +546,92 @@ class TopoMemSystem:
             h2_drift=h2_m.h2_drift_since_baseline,
         )
 
+
+    def get_health_dashboard(self) -> dict:
+        """OBD 风格健康诊断面板。
+
+        返回结构：
+        - current: 当前健康分、阈值、趋势
+        - faults: 最近故障码历史
+        - prediction: 预测几步后需要 consolidation
+        - ascii_bar: 可视化条形图
+        """
+        health_status = self.memory.get_health_status()
+        trend = health_status.trend
+        faults = self.memory.get_fault_log(10)
+
+        # ASCII 条形图
+        score = health_status.health_score
+        bar_len = 40
+        filled = int(score * bar_len)
+        bar = "█" * filled + "░" * (bar_len - filled)
+
+        # 趋势箭头
+        if trend:
+            if trend.direction.value == "green":
+                arrow = "→"
+            elif trend.direction.value == "yellow":
+                arrow = "↘"
+            elif trend.direction.value == "orange":
+                arrow = "⬇"
+            else:
+                arrow = "⛔"
+        else:
+            arrow = "?"
+
+        return {
+            "step": self._step,
+            "current": {
+                "health_score": round(health_status.health_score, 4),
+                "h1_health": round(health_status.h1_health, 4),
+                "h2_health": round(health_status.h2_health, 4),
+                "consolidate_threshold": round(health_status.consolidate_threshold, 4),
+                "betti_1": health_status.betti_1_count,
+                "betti_2": health_status.betti_2_count,
+            },
+            "trend": {
+                "direction": trend.direction.value if trend else "none",
+                "arrow": arrow,
+                "slope": round(trend.slope, 6) if trend else 0.0,
+                "is_stable": trend.is_stable if trend else True,
+                "confidence": round(trend.confidence, 3) if trend else 0.0,
+            },
+            "prediction": {
+                "steps_until_consolidation": trend.steps_until_consolidation if trend else None,
+                "action_required": self._health_controller.should_early_intervene(health_status)
+                                   or self._health_controller.should_consolidate(health_status),
+            },
+            "faults": faults,
+            "ascii_bar": f"[{bar}] {score:.1%}",
+        }
+
+    def print_health_dashboard(self) -> None:
+        """打印可读的健康面板到 stdout。"""
+        dash = self.get_health_dashboard()
+        c = dash["current"]
+        t = dash["trend"]
+        p = dash["prediction"]
+
+        print()
+        print("╔══════════════════════════════════════════╗")
+        print("║     TopoMem Health ECU Dashboard         ║")
+        print("╠══════════════════════════════════════════╣")
+        print(f"║  Step {dash['step']:<6}  {dash['ascii_bar']:<23}║")
+        print(f"║  Trend {t['arrow']} {t['direction']:<7}  slope={t['slope']:+.4f}        ║")
+        print(f"║  H1={c['h1_health']:.3f}  H2={c['h2_health']:.3f}  B1={c['betti_1']:<3}  B2={c['betti_2']:<3}   ║")
+        print(f"║  Threshold={c['consolidate_threshold']:.3f}                        ║")
+        if p['steps_until_consolidation'] is not None:
+            print(f"║  ⚠ ETA {p['steps_until_consolidation']} steps to consolidation          ║")
+        elif t['direction'] in ('orange', 'red'):
+            print(f"║  ⚠ Early intervention needed              ║")
+        else:
+            print(f"║  ✓ Healthy                                ║")
+        print("╚══════════════════════════════════════════╝")
+        if dash["faults"]:
+            print(f"  Recent faults: {[f['code'] for f in dash['faults'][-5:]]}")
+        print()
+
+
     def get_metrics(self) -> dict:
         """返回系统运行时指标。用于监控和调优。"""
         # 快照当前状态
@@ -549,6 +683,11 @@ class TopoMemSystem:
         with open(path / "meta.json", "w", encoding="utf-8") as f:
             json.dump(meta, f)
 
+        # 保存 Health ECU 状态
+        ec_state = self._health_controller.get_state()
+        with open(path / "health_ecu.json", "w", encoding="utf-8") as f:
+            json.dump(ec_state, f)
+
         logger.info(f"System saved to {path}")
 
     def load(self, path: str) -> None:
@@ -566,6 +705,13 @@ class TopoMemSystem:
             self._step = meta.get("step", 0)
             self._last_calibration_step = meta.get("last_calibration_step", 0)
 
+        # 恢复 Health ECU 状态
+        ec_path = path / "health_ecu.json"
+        if ec_path.exists():
+            with open(ec_path, "r", encoding="utf-8") as f:
+                ec_state = json.load(f)
+            self._health_controller.load_state(ec_state)
+
         logger.info(f"System loaded from {path}")
 
     def reset(self) -> None:
@@ -580,6 +726,9 @@ class TopoMemSystem:
         self.self_aware = SelfAwareness(self.config.awareness)
         self.guard = ConsistencyGuard(self.config.awareness)
         self.adapters = AdapterPool(self.config.adapter, self.embedding)
+        self._health_controller = TopologyHealthController(
+            HealthControllerConfig(h1_action_threshold=self.config.h1_health_action_threshold)
+        )
 
         logger.info("System reset")
 
@@ -619,12 +768,25 @@ class TopoMemSystem:
     def consolidation_pass(
         self,
         orphan_threshold: float = 0.05,
-        merge_centroid_threshold: float = 0.92,
+        merge_centroid_threshold: float = None,
         update_topology: bool = False,
     ) -> dict:
-        """记忆整合检查（借鉴 LLM Wiki Lint 模式）。"""
+        """记忆整合检查（借鉴 LLM Wiki Lint 模式）。
+
+        Args:
+            orphan_threshold: persistence_score 低于此值的节点视为孤儿
+            merge_centroid_threshold: 簇中心相似度高于此值则可合并（方向2: 降低到0.80）
+            update_topology: 是否在整合后重新计算拓扑
+        """
+        # 方向2: 使用 config 中的阈值，保留参数覆盖能力
+        if merge_centroid_threshold is None:
+            merge_centroid_threshold = self.config.consolidation_merge_threshold
+
         self._metrics.consolidation_calls += 1
         t0 = time.perf_counter()
+
+        # 记录 consolidation 前健康状态
+        health_before = self.memory.get_health_status()
 
         node_count = self.memory.node_count()
         cluster_centers = self.memory.get_cluster_centers()
@@ -706,6 +868,10 @@ class TopoMemSystem:
                 # 空图无法更新拓扑（还没有节点）
                 logger.warning(f"Consolidation topology update skipped: {e}")
 
+        # consolidation 后健康状态（可能已通过 update_topology 刷新）
+        health_after = self.memory.get_health_status()
+        health_improvement = health_after.health_score - health_before.health_score
+
         report = {
             "orphans": orphans,
             "orphan_count": len(orphans),
@@ -714,6 +880,9 @@ class TopoMemSystem:
             "cluster_count": len(cluster_ids),
             "node_count": node_count,
             "topology_updated": topology_updated,
+            "health_before": round(health_before.health_score, 4),
+            "health_after": round(health_after.health_score, 4),
+            "health_improvement": round(health_improvement, 4),
         }
 
         self._metrics.orphans_detected += len(orphans)

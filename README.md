@@ -1,115 +1,163 @@
-# Unified-SEL
+# Granularity-Aligned Metacognition for LLMs
 
-> Current project map: see `PROJECT_OVERVIEW_AND_INDEX_2026-04-22.md`.
-> Current scope lock and upload batches: see `MAINLINE_SCOPE_LOCK_2026-04-22.md`.
-> Learned governance design draft: see `LEARNED_STATE_GOVERNANCE_SPEC_2026-04-22.md`.
-> The original README below describes the early mechanism-track framing; the project has since pivoted to Capability Router + boundary-local amplification.
+> **Research Question**: When should an LLM trust its own output, verify it, or escalate to a stronger model?
+>
+> **Core Finding**: Feedback retry is a boundary-local amplifier — it produces an inverted-U benefit pattern concentrated in the "near-boundary" zone (p = 0.0008).
+>
+> **Methodological Contribution**: The Granularity Alignment Principle — a signal's predictive power depends on whether its measurement granularity matches the decision granularity.
 
-Unified-SEL is a research codebase for continual learning without explicit task-boundary signals.
+---
 
-Its core hypothesis is:
+## What This Project Is
 
-> A learner should be able to detect environmental change from its own internal signals,
-> create or split structure when needed, and preserve useful old structure without being told
-> that "the task has changed".
+A research codebase investigating **metacognitive monitoring** for LLMs — specifically, how a system can evaluate its own capability boundaries and make routing decisions (accept / verify / escalate) based on internal signals.
 
-The project is therefore aimed first at **endogenous task-boundary formation**, not at being merely a stronger generic continual-learning baseline.
+### Two Independent Contributions
 
-## Real Relationship Between the Three Source Projects
+| Track | Status | Description |
+|-------|--------|-------------|
+| **Boundary-Local Amplification** | ✅ Published-quality finding | Feedback retry benefit follows inverted-U curve; ABOVE-filtering saves 54.4% of feedback calls |
+| **Capability Router** | ✅ Research tool | Benchmark + routing system with 10 monitors and 3 policy layers for studying accept/verify/escalate decisions |
+| TopoMem OBD | ✅ Confirmed (separate) | Batch-level deployment health monitoring via embedding drift detection |
 
-This repository is **not** a direct merge of three existing projects.
-It is a new research-oriented integration that draws different strengths from each source:
+### What This Project Is NOT
 
-- `F:\sel-lab`
-  - Provides the main continual-learning line
-  - Contributes DFA-style local learning
-  - Contributes tension-driven structural evolution
-  - Contributes the strongest existing experimental framing for sequential learning and forgetting
+- ❌ **Not a "self-aware" or "conscious" AI** — we study monitoring signals, not consciousness
+- ❌ **Not a continual learning system that beats EWC** — toy-problem comparison was inconclusive (p = 0.9484) and archived
+- ❌ **Not a production routing service** — the Capability Router is a research benchmark using synthetic tasks
 
-- `F:\SDAS`
-  - Provides the surprise-driven structure-pool idea
-  - Contributes the `observe -> reinforce / branch / create` pattern
-  - Contributes the idea that unfamiliar inputs should trigger new structure without external task labels
+---
 
-- `F:\fcrs_mis`
-  - Provides engineering reference rather than the same learning algorithm
-  - Contributes stricter type organization, pool abstraction, validation, capacity management, and vectorized implementation style
+## Repository Structure
 
-## Design Position
+```
+unified-sel/
+  core/
+    capability_benchmark.py    # Main benchmark engine (monitors + policies)
+    runtime.py                 # Path management, save/load
+    structure.py               # Archived: DFA structure unit (kept for smoke test compatibility)
+    pool.py                    # Archived: StructurePool lifecycle (kept for smoke test compatibility)
+    learner.py                 # Archived: DFA learner (kept for smoke test compatibility)
+  experiments/
+    capability/
+      capbench.py              # CLI: run / compare / report / list-monitors / list-policies
+      export_bench.py          # Export benchmark to JSONL (public/eval modes)
+      benchmark.py             # Benchmark runner
+      validate_above_filtering.py  # Validation experiments
+      README.md                # Capability Router user guide
+  data/
+    capability_boundary_bench/ # JSONL benchmark files
+  topomem/                   # TopoMem subsystem (batch-level health monitoring only)
+  archive/                   # Archived experiments and documents
+    experiments_continual/   # Old mechanism-track experiments (EWC comparison, etc.)
+    meta_controller/         # Deprecated meta-controller experiments
+    cep_cc/                  # Deprecated CEP-CC experiments
+    weight_graph/            # Deprecated weight analysis experiments
+    lsg_deprecated/          # Deprecated learned-state-governance experiments
+  tests/
+    smoke_test.py            # Quick validation
+  papers/
+    boundary_local_amplification_draft.md  # Paper draft
+```
 
-The intended design is:
+---
 
-- use `SEL-Lab` as the learning backbone
-- use `SDAS` as the source of surprise-driven structure creation
-- use `FCRS` as the engineering and abstraction reference
+## Quick Start
 
-So the project should be understood as:
+### Run the Capability Benchmark
 
-`SEL-Lab learning core` + `SDAS surprise mechanism` + `FCRS engineering discipline`
+```bash
+# List available monitors and policies
+python experiments/capability/capbench.py list-monitors
+python experiments/capability/capbench.py list-policies
 
-not as a literal code merge.
+# Run a benchmark
+python experiments/capability/capbench.py run \
+  --suite code-20 \
+  --protocol monitor_repair_triage \
+  --monitor semantic \
+  --seed 7
 
-## Current State
+# Compare two configurations
+python experiments/capability/capbench.py compare \
+  results/capability_benchmark/run_a.json \
+  results/capability_benchmark/run_b.json
+```
 
-Current `unified-sel` is still an early skeleton implementation.
+### Run Smoke Tests
 
-What exists now:
+```bash
+python tests/smoke_test.py
+```
 
-- `core/structure.py`
-- `core/pool.py`
-- `core/learner.py`
-- `core/runtime.py`
-- minimal baseline placeholders in `experiments/baselines/`
-- `tests/smoke_test.py`
+---
 
-What is true right now:
+## Core Concepts
 
-- the repository already reflects the intended integration direction
-- the smoke test passes
-- the code is not yet feature-aligned with the fuller mechanisms in the three source projects
-- some planned experiment and analysis entrypoints described in `AGENTS.md` still need to be implemented
+### The Granularity Alignment Principle
 
-## Target Mechanism
+> **A signal's usefulness depends on whether its measurement granularity matches the decision granularity.**
 
-Unified-SEL is built around two complementary internal signals:
+| Signal | Measures | Granularity | Good For | Bad For |
+|--------|----------|-------------|----------|---------|
+| Semantic monitor | Answer surface structure | Per-task | Detecting visible-pass ambiguity | Predicting cross-task generalization |
+| Embedding novelty (TopoMem surprise) | Input distribution shift | Batch-level | Detecting deployment environment drift | Per-task routing decisions |
 
-- `tension`
-  - asks whether an existing structure is saturated or struggling
-  - high tension suggests cloning or splitting work across structures
+**Key insight**: TopoMem's embedding novelty signal was *rejected* as a per-task routing monitor (success 0.7/0.85 vs baseline 1.0) because embedding novelty ≠ answer correctness. However, it was *confirmed* as a batch-level deployment health monitor (centroid drift 27.2× separation, p ≈ 0). This is not a threshold problem — it is a structural mismatch that no parametric adjustment can fix.
 
-- `surprise`
-  - asks whether the current input fits any known structure
-  - high surprise suggests creating a new structure
+### Boundary-Local Amplification
 
-These two signals answer different questions:
+When a solver is "near" its capability boundary (close to correct but missing a specific constraint), feedback retry produces outsized benefit:
 
-- `tension`: "Is the current structure enough?"
-- `surprise`: "Have I seen this kind of situation before?"
+- **ABOVE zone** (already correct): Feedback is wasted → filter out
+- **NEAR zone** (close to correct): Feedback is highly effective → +49% gain, p = 0.0008
+- **BELOW zone** (far from correct): Feedback is useless → escalate instead
 
-The research claim of Unified-SEL depends on combining both.
+This produces an **inverted-U pattern** that generalizes across model scales (Qwen2.5 0.5B → 1.5B → 3B shows increasing NEAR-zone fraction: 0% → 10% → 20%).
 
-## Research Goal
+---
 
-The main research target is to show that, in a no-boundary continual-learning setting:
+## Scientific Integrity
 
-- Unified-SEL can form task-boundary structure from internal signals alone
-- these endogenous boundaries remain useful under drift and capacity pressure
-- the resulting boundary dynamics help explain both retention and transfer
+### Red-Line Rules
 
-Performance against baselines still matters, but as validation rather than identity:
+1. **No oracle overclaim**: Escalation path success rates assume oracle (expected_answer). Any "100% success" claim must be labeled "based on oracle assumption".
+2. **No simulated cost as real cost**: `cost_units` and `latency_units` are hardcoded abstract values. Any "cost reduction X%" conclusion must be labeled "based on assumed cost model".
+3. **No hidden-test leakage**: Public benchmark files (`.public.jsonl`) must not contain `hidden_tests`, `fixed_code`, or `expected_route`.
+4. **No self-awareness validated claim**: The self-aware LLM direction is a future narrative. Do not claim it is validated or operational.
 
-- Unified-SEL should remain competitive with EWC on average accuracy
-- Unified-SEL should improve forgetting relative to its current best-known result
-- comparisons should eventually hold across multiple random seeds with stronger statistical support
+### Truth Table
 
-So the primary claim is:
+| Conclusion | Status | Evidence |
+|------------|--------|----------|
+| Boundary-local amplification exists | ✅ SAFE | Phase A, p = 0.0008 |
+| ABOVE filtering saves feedback calls | ✅ SAFE | Phase E, 54.4% reduction |
+| NEAR/BELOW has ranking signal | ⚠️ WEAK | ROC AUC = 0.769, threshold unstable |
+| Unified-SEL beats EWC | ❌ UNVERIFIED | p = 0.9484 |
+| TopoMem surprise works as routing monitor | ❌ REJECTED | success 0.7/0.85, structural mismatch |
+| TopoMem works as deployment health monitor | ✅ CONFIRMED | OBD 10-seed: 27.2× [18.4×, 37.3×], p ≈ 0 |
 
-`endogenous boundary formation as the mechanism`
+---
 
-not:
+## Citation
 
-`a slightly better continual-learning baseline`
+If you use this codebase, please cite:
 
-## Workflow
+```bibtex
+@misc{unified_sel_2026,
+  title={Granularity-Aligned Metacognition: Why Embedding Novelty Predicts Distribution Shift but Not Answer Correctness},
+  author={[Authors]},
+  year={2026},
+  note={Research codebase for boundary-local amplification and capability routing}
+}
+```
 
-See `AGENTS.md` for the project operating rules and `STATUS.md` for the current task.
+---
+
+## License
+
+MIT License — see individual files for details.
+
+---
+
+*This project was originally named "Unified-SEL" and explored surprise-driven structural evolution for continual learning. After rigorous experimental evaluation, the core hypothesis (surprise-driven structural birth/death > EWC) was found to be unverifiable on the toy problem (p = 0.9484). The project pivoted to its current focus on metacognitive monitoring and capability routing. Archived materials are preserved in `archive/` for reference.*

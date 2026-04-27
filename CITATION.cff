@@ -1,0 +1,35 @@
+cff-version: 1.2.0
+message: "If you use this codebase, please cite both the software and the associated paper."
+type: software
+title: "Granularity-Aligned Metacognition for LLMs"
+abstract: >
+  A research codebase investigating metacognitive monitoring for LLMs.
+  Core contributions: (1) Boundary-Local Amplification — feedback retry
+  produces an inverted-U benefit pattern concentrated in the near-boundary
+  zone (p = 0.0008); (2) The Granularity Alignment Principle — a signal's
+  predictive power depends on whether its measurement granularity matches
+  the decision granularity; (3) Capability Router — a benchmark system
+  for studying accept/verify/escalate routing decisions.
+authors:
+  - family-names: "Anonymous"
+    given-names: ""
+repository-code: "https://github.com/anonymous/unified-sel"
+license: MIT
+keywords:
+  - large language models
+  - metacognition
+  - capability routing
+  - boundary-local amplification
+  - granularity alignment
+  - embedding drift detection
+  - synthetic benchmark
+version: 2026.04.27
+date-released: 2026-04-27
+preferred-citation:
+  type: article
+  title: "Boundary-Local Amplification: Feedback Retry Concentrates Benefit in the Near-Boundary Zone"
+  authors:
+    - family-names: "Anonymous"
+      given-names: ""
+  year: 2026
+  journal: "[Under submission]"

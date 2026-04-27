@@ -31,6 +31,25 @@ class TopologyConfig:
     persistence_threshold: Optional[float] = None  # None = use median
     filtration_steps: int = 30
     metric: str = "euclidean"
+    max_h0_clusters: Optional[int] = None  # 限制 H0 聚类数，None = 自动
+    
+    # 聚类方法选择（P0 修复：解决 H0 单点簇问题）
+    clustering_method: str = "hybrid"    # "hybrid" | "dbscan" | "h0"
+                                         # hybrid = DBSCAN 预聚类 + H0 细化（推荐）
+                                         # dbscan = 纯密度聚类
+                                         # h0 = 原始 single-linkage
+    
+    # DBSCAN 预聚类参数
+    dbscan_eps: Optional[float] = None   # None = 自动估计（k-distance 90 分位数）
+    dbscan_min_samples: int = 3          # 形成簇的最少点数
+    auto_eps_percentile: float = 90      # 自动估计 eps 时使用的分位数
+
+    # UMAP 降维参数（P0 修复：解决高维空间聚类失效问题）
+    # 验证结果：384D DBSCAN ARI=0.000，UMAP(2D)+DBSCAN ARI=0.945
+    use_umap_before_clustering: bool = True  # 在聚类前先用 UMAP 降到低维
+    umap_n_components: int = 2           # UMAP 降维目标维度（2D 效果最好，ARI=0.945）
+    umap_n_neighbors: int = 15           # UMAP n_neighbors 参数
+    umap_min_dist: float = 0.1           # UMAP min_dist 参数
 
 
 @dataclass
@@ -41,6 +60,12 @@ class MemoryConfig:
     topo_recompute_interval: int = 20  # recompute topology every N inserts
     prune_threshold: float = 0.1       # persistence below this → pruneable
     prune_recent_protection: int = 10  # 保护最近 N 步内创建的节点
+    # Retrieval weighting (方向4: H0 persistence 作为检索信号)
+    retrieval_vector_weight: float = 0.6   # alpha: vector similarity weight
+    retrieval_topo_weight: float = 0.3      # beta: topological score weight
+    retrieval_persistence_weight: float = 0.1  # gamma: H0 persistence weight
+    # 重要性时间衰减（原来硬编码 0.001）
+    importance_decay: float = 0.001
 
 
 @dataclass
@@ -86,4 +111,8 @@ class TopoMemConfig:
     engine: EngineConfig = field(default_factory=EngineConfig)
     adapter: AdapterConfig = field(default_factory=AdapterConfig)
     awareness: SelfAwarenessConfig = field(default_factory=SelfAwarenessConfig)
+    # Consolidation settings (direction 2)
+    consolidation_merge_threshold: float = 0.80  # lowered from 0.92 to enable real merge candidates
+    # H1 health action threshold (direction 1)
+    h1_health_action_threshold: float = 0.3     # trigger consolidation when h1_health falls below this
     seed: int = 42

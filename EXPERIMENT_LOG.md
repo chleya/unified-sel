@@ -4,6 +4,204 @@ Append one entry after each concrete experiment or verification step.
 
 ---
 
+## 2026-04-23 ABOVE-Zone Filtering Real-LLM Validation (Qwen2.5-0.5B)
+
+**实验目的**：验证 boundary-local amplification 的倒U型模式是否在真实 LLM 上成立，特别是 ABOVE-zone filtering 是否有效。
+
+**模型**：Qwen2.5-0.5B-Instruct-Q4_K_M (469MB GGUF)，llama.cpp server port 8081
+
+**方法**：code-20 任务，single-shot → 失败则 feedback retry → 分类为 ABOVE/NEAR/BELOW
+
+**结果**：
+
+| Zone | Count | Percentage | Description |
+|------|-------|------------|-------------|
+| ABOVE | 4 | 20.0% | Single-shot correct |
+| NEAR | 0 | 0.0% | Feedback rescued |
+| BELOW | 16 | 80.0% | Feedback failed |
+
+**关键发现**：
+1. ABOVE-zone filtering 有效：20% 任务无需 feedback，可节省 4/20 = 20% 的 feedback 调用
+2. **NEAR-zone 完全缺失**：0.5B 模型没有"接近正确"的状态，feedback retry 完全无效
+3. Confidence 校准失败：ABOVE 和 BELOW 的 confidence 完全相同（0.95），无法区分
+4. 与 SearchLocalSolver 对比：SearchLocalSolver 的 NEAR=38.8%，而 0.5B LLM 的 NEAR=0%
+
+**结论**：
+- ABOVE-zone filtering 在 0.5B 模型上部分有效（节省 20% 调用）
+- 但 inverted-U 模式 **不存在** 于 0.5B 模型——模型太弱，没有 NEAR 区间
+- 这暗示 boundary-local amplification 的 NEAR 区间需要足够强的模型才能出现
+- 论文 Section 4.4 已更新此结果
+
+**结果文件**：results/capability_benchmark/above_filtering_validation.json
+
+---
+
+## 2026-04-23 ABOVE-Zone Filtering Real-LLM Validation (Qwen2.5-1.5B) — Run 1
+
+**实验目的**：验证更大模型是否会出现 NEAR 区间，建立模型规模与 boundary-local amplification 的关系。
+
+**模型**：Qwen2.5-1.5B-Instruct-Q4_K_M (1.12GB GGUF)，llama.cpp server port 8082 (Vulkan GPU)
+
+**方法**：code-20 public 任务（无 hidden tests），single-shot → 失败则 feedback retry
+
+**结果**：
+
+| Zone | Count | Percentage |
+|------|-------|------------|
+| ABOVE | 6 | 30.0% |
+| NEAR | 2 | 10.0% |
+| BELOW | 12 | 60.0% |
+
+**与 0.5B 对比**：
+
+| Model | ABOVE | NEAR | BELOW | ABOVE-filtering savings |
+|-------|:-----:|:----:|:-----:|:----------------------:|
+| Qwen2.5-0.5B | 20% | 0% | 80% | 20% |
+| Qwen2.5-1.5B | 30% | 10% | 60% | 30% |
+
+**关键发现**：
+1. **NEAR 区间出现**：1.5B 模型有 2/20 任务通过 feedback retry 成功，0.5B 为 0/20
+2. **ABOVE 比例提升**：30% vs 20%，说明更大模型的 base capability 更强
+3. **BELOW 比例下降**：60% vs 80%，说明更难的任务也能部分解决
+4. Confidence 仍然完全无法区分（所有 zone 都是 0.95）
+
+**结论**：
+- NEAR 区间是**模型能力依赖的**。0.5B 没有 NEAR 区间，1.5B 开始出现。
+- 但此实验使用 public 文件（无 hidden tests），验证可能不严格。
+
+**结果文件**：results/capability_benchmark/above_filtering_validation_1.5b.json (已覆盖)
+
+---
+
+## 2026-04-27 ABOVE-Zone Filtering Real-LLM Validation (Qwen2.5-1.5B) — Run 2 (Prompt Improved)
+
+**实验目的**：在修正后的 prompt（加入 visible tests 作为 examples）和 eval 文件（含 hidden tests）下重新验证 1.5B 模型，确保验证严格。
+
+**模型**：Qwen2.5-1.5B-Instruct-Q4_K_M (1.12GB GGUF)，llama.cpp server port 8082 (Vulkan GPU)
+
+**方法变更**：
+1. 加载 `code-20.eval.jsonl`（含 hidden tests）而非 public 文件
+2. Prompt 加入 `visible_tests` 作为 behavior examples
+3. 移除了误导性提示 "The function name tells you what it should do"（函数名均为 `solve`）
+
+**结果**：
+
+| Zone | Count | Percentage |
+|------|-------|------------|
+| ABOVE | 6 | 30.0% |
+| NEAR | 0 | 0.0% |
+| BELOW | 14 | 70.0% |
+
+**与 Run 1 对比**：
+
+| Run | Prompt | Eval file | ABOVE | NEAR | BELOW |
+|-----|--------|-----------|:-----:|:----:|:-----:|
+| Run 1 | 原始（无 visible tests） | public（无 hidden） | 30% | 10% | 60% |
+| Run 2 | 改进（含 visible tests） | eval（含 hidden） | 30% | **0%** | **70%** |
+
+**关键发现**：
+1. **NEAR 区间消失**：加入 visible tests 和 hidden tests 后，NEAR 从 10% 降至 0%。说明 Run 1 的 NEAR 任务可能是由于验证不严格（无 hidden tests）或模型"蒙对"。
+2. **ABOVE 比例不变**：30%，说明这 6 个任务确实是模型真正理解的（如 max→min、missing_not、wrong_sign 等逻辑反转）。
+3. **1.5B 模型无法有效利用 visible tests**：debug 显示模型经常返回未修改的 buggy code 或与 visible test 矛盾的输出（如 `code_11` visible test 要求 `solve(3)==6`，模型仍输出 `3*x`）。
+4. **Feedback retry 完全无效**：所有 14 个 BELOW 任务在 feedback 后仍然失败，revise prompt 未产生任何有效修正。
+5. **Confidence 完全失效**：所有 zone 的 confidence 均为 0.95，无区分能力。
+
+**深层分析**：
+- **Prompt 敏感性**：1.5B 模型对 prompt 格式极度敏感。原始 prompt 中 "The function name tells you what it should do" 是误导性提示（函数名均为 `solve`），但模型可能因此产生幻觉性"蒙对"。
+- **Visible-test overfitting**：`code_9` (length_of_list) 的 visible test `([1,2,3], 3)` 恰好被 `max(nums)` 满足，模型因此输出 `max(nums)`，但 hidden test 揭穿了这个错误。
+- **模型能力阈值**：1.5B 模型在这个代码修复任务集上**低于 NEAR zone 出现的阈值**。它不是"差一点"，而是"要么真正理解（ABOVE），要么完全不理解（BELOW）"。
+
+**结论**：
+- **Inverted-U 模式在 1.5B 模型上不存在**。NEAR zone 需要更大模型（3B+ 可能开始出现，见下方 3B 实验）或更简单任务。
+- **ABOVE-zone filtering 仍然有效**：30% 任务可跳过 feedback，节省调用。
+- **Prompt 工程对真实 LLM 验证至关重要**：合成 solver 和真实 LLM 的输入需求不同，benchmark 设计必须考虑这一点。
+- **论文 Section 4.4 需要更新**：区分 "synthetic solver 结果" 和 "real LLM 结果"，明确标注模型规模依赖。
+
+**代码变更**：
+- `core/llm_solver.py`：`LlamaCppSolver._build_prompt()` 和 `_build_revision_prompt()` 现在嵌入 `visible_tests` 作为 examples。
+- `experiments/capability/validate_above_filtering_1.5b.py`：现在加载 `code-20.eval.jsonl`（含 hidden tests）。
+
+**结果文件**：results/capability_benchmark/above_filtering_validation_1.5b.json
+
+---
+
+## 2026-04-23 ABOVE-Zone Filtering Real-LLM Validation (Qwen2.5-3B) — Run 1
+
+**实验目的**：验证 3B 模型的 NEAR 区间是否继续扩大，建立完整的 scale-dependent 趋势。
+
+**模型**：Qwen2.5-3B-Instruct-Q5_K_M (2.27GB GGUF)，llama.cpp server port 8083 (Vulkan GPU)
+
+**方法**：code-20 public 任务（无 hidden tests），single-shot → 失败则 feedback retry
+
+**结果**：
+
+| Zone | Count | Percentage |
+|------|-------|------------|
+| ABOVE | 4 | 20.0% |
+| NEAR | 4 | 20.0% |
+| BELOW | 12 | 60.0% |
+
+**关键发现**：
+1. **NEAR 区间出现**：3B 模型有 4/20 任务通过 feedback retry 成功
+2. **NEAR gain**：4/(4+12) = 25.0%，feedback retry 效率高于 1.5B
+
+**结论**：
+- NEAR 区间是**模型能力依赖的**
+- 但此实验使用 public 文件（无 hidden tests），验证可能不严格
+
+**结果文件**：results/capability_benchmark/above_filtering_validation_3b.json (已覆盖)
+
+---
+
+## 2026-04-27 ABOVE-Zone Filtering Real-LLM Validation (Qwen2.5-3B) — Run 2 (Strict Validation)
+
+**实验目的**：在修正后的 prompt（加入 visible tests）和 eval 文件（含 hidden tests）下重新验证 3B 模型。
+
+**模型**：Qwen2.5-3B-Instruct-Q5_K_M (2.27GB GGUF)，llama.cpp server port 8083 (Vulkan GPU)
+
+**方法变更**：
+1. 加载 `code-20.eval.jsonl`（含 hidden tests）
+2. Prompt 嵌入 `visible_tests` 作为 behavior examples（同 1.5B Run 2）
+
+**结果**：
+
+| Zone | Count | Percentage |
+|------|-------|------------|
+| ABOVE | 5 | 25.0% |
+| NEAR | 3 | 15.0% |
+| BELOW | 12 | 60.0% |
+
+**三模型严格验证对比**：
+
+| Model | Params | Eval File | ABOVE | NEAR | BELOW | NEAR gain |
+|-------|--------|-----------|:-----:|:----:|:-----:|:---------:|
+| Qwen2.5-1.5B | 1.5B | eval (strict) | 30% | **0%** | 70% | 0% |
+| Qwen2.5-3B | 3.4B | eval (strict) | 25% | **15%** | 60% | 20.0% |
+
+**NEAR 任务详情**：
+- `code_2` (max_instead_of_min): 1.5B 完全失败，3B 通过 feedback 拯救
+- `code_10` (count_words_with_vowel): 3B feedback 有效
+- `code_15` (reverse_comparison): 3B feedback 有效
+
+**关键发现**：
+1. **NEAR zone 确认存在**：3B 模型在严格验证下仍有 15% NEAR zone，证明 NEAR 不是 public 文件泄露造成的假象。
+2. **模型规模阈值效应**：1.5B 无 NEAR (0%)，3B 有 NEAR (15%)。1.5B 无法处理的语义级修改（如 max→min），3B 可以通过 feedback 学会。
+3. **Inverted-U 仍不完整**：NEAR=3 < ABOVE=5，未达到 SearchLocalSolver 的 NEAR>ABOVE 模式。
+4. **Confidence 仍然完全失效**：所有 zone = 0.95。
+
+**结论**：
+- **NEAR zone 是真实存在的**，且随模型规模增大而扩大（1.5B: 0% → 3B: 15%）。
+- **1.5B 低于 NEAR-zone 阈值**，3B 跨过阈值。
+- **完整 inverted-U 可能需要更大模型**（7B+）或更简单任务。
+- **ABOVE-filtering 在 3B 上仍然有效**：25% 任务可跳过 feedback。
+
+**代码变更**：
+- `experiments/capability/validate_above_filtering_3b.py`：现在加载 `code-20.eval.jsonl`。
+
+**结果文件**：results/capability_benchmark/above_filtering_validation_3b.json
+
+---
+
 ## 2026-04-16 OBD 10-Seed Validation + BatchHealthMonitor Integration + Paper Draft
 
 **OBD 10-seed 验证**：
@@ -5514,3 +5712,1219 @@ Result:
 Note:
 
 - Git now shows deletion of two tracked TopoMem test Chroma files under `topomem/__test_*_tmp/`; these were generated test DB artifacts and smoke still passes without them.
+
+---
+
+## 2026-04-23 Domain-Aware Routing Optimization (BatchHealthMonitor window=5)
+
+**类型**: Domain-aware routing optimization
+
+**目标**: 缩小 BatchHealthMonitor window_size 从 10 到 5，加速域漂移检测，提升跨域路由性能
+
+**模型**: Qwen2.5-0.5B-Instruct (Q4_K_M) via llama.cpp server
+
+**任务**: code-20 + reasoning-20 = 40 个混合任务
+
+### 变更
+
+- `experiments/capability/llm_routing_experiment.py` line 77: `window_size=10` → `window_size=5`
+
+### 跨域结果 (window=5 vs window=10)
+
+| 策略 | Semantic (w=10) | Semantic (w=5) | Counterfactual (w=10) | Counterfactual (w=5) | Revisions |
+|------|:-------:|:-------:|:------------:|:------------:|:---------:|
+| local_only | 5% | 5% | 0% | 0% | 0 |
+| monitor_no_revision_triage | 50% | 50% | 45% | 45% | 0 |
+| **domain_aware_no_revision_triage** | **65%** | **85%** | **60%** | **80%** | **0** |
+| verifier_first | 100% | 100% | 100% | 100% | 39-40 |
+
+### 改进分析
+
+- Semantic monitor: 65% → **85%** (+20pp)
+- Counterfactual monitor: 60% → **80%** (+20pp)
+- 仍然零 revision 调用
+- Escalation 调用: semantic 31/40, counterfactual 32/40
+
+### 与 verifier_first 的效率-准确率权衡
+
+| 策略 | 成功率 | Revisions | Escalations | 总 API 调用 |
+|------|:-----:|:---------:|:----------:|:---------:|
+| domain_aware (semantic, w=5) | 85% | 0 | 31 | 71 |
+| domain_aware (counterfactual, w=5) | 80% | 0 | 32 | 72 |
+| verifier_first | 100% | 39-40 | 39 | ~119 |
+
+domain_aware_no_revision_triage 用 ~60% 的 API 调用量达到 80-85% 成功率，verifier_first 用 ~100% 调用量达到 100%。
+
+### 根因
+
+window_size=5 使 BatchHealthMonitor 在看到 2-3 个 reasoning 任务后即触发域漂移检测（之前需要 3-5 个），大幅减少了早期 reasoning 任务的 accept_low_signal 误判。
+
+### 仍存在的 gap
+
+15-20% 的失败任务可能来自:
+1. 最前 1-2 个 reasoning 任务（BatchHealthMonitor 还未积累足够样本）
+2. 某些 reasoning 任务的 monitor signal 极低（< 0.15），即使域漂移检测到也走 accept_low_signal
+
+### Smoke Test
+
+- `python tests/smoke_test.py` — all passed
+
+**结果文件**: `results/capability_benchmark/cross_domain_llm_1776892568.json`
+
+---
+
+## 2026-04-23 Domain-Aware Routing V2: Drift Latch + Protocol Simplification
+
+**类型**: Domain-aware routing optimization (second iteration)
+
+**目标**: 修复 domain_aware_no_revision_triage 的尾部失败和 warmup 失败问题
+
+### 失败模式分析 (window=5, latch=False)
+
+Semantic monitor (6 failed):
+- `reasoning_0, reasoning_1` — 前 2 个 reasoning 任务，BatchHealthMonitor 还没检测到漂移
+- `reasoning_16-19` — 最后 4 个 reasoning 任务，漂移检测因窗口滑动而消失
+
+Counterfactual monitor (8 failed):
+- 同上 6 个 reasoning 任务
+- `code_5, code_10` — counterfactual signal=0.330 < low_floor=0.35，被误判为安全
+
+### 修复 1: Drift Latch
+
+一旦 BatchHealthMonitor 检测到域漂移，锁定 `drift_latch=True`，不再因窗口滑动而回退。
+
+效果: Semantic 85% → 95%, Counterfactual 80% → 92%
+
+### 修复 2: Protocol Simplification
+
+分析发现：在 drift_latch=False 时，accept_low_signal 路径是所有失败的根因。
+对弱 revision 模型 (0.5B)，简化协议为：
+
+- **验证通过** → 接受 (verify_accept)
+- **验证失败** → 升级 (domain_aware_escalate / pre_latch_escalate)
+
+不再有 accept_low_signal 路径。drift_latch 仅作为信号标记区分决策名称。
+
+### 最终跨域结果
+
+| 策略 | Semantic | Counterfactual | Revisions | Escalations |
+|------|:-------:|:------------:|:---------:|:-----------:|
+| local_only | 2% | 2% | 0 | 0 |
+| monitor_no_revision_triage | 50% | 45% | 0 | 17-19 |
+| **domain_aware_no_revision_triage** | **100%** | **100%** | **0** | **39** |
+| verifier_first | 100% | 100% | 38-39 | 37-39 |
+
+### 成本对比 (基于假设成本模型)
+
+| 策略 | 成功率 | Revisions | Escalations | 总 API 调用 |
+|------|:-----:|:---------:|:----------:|:---------:|
+| domain_aware_no_revision_triage | 100% | 0 | 39 | ~79 |
+| verifier_first | 100% | 38-39 | 37-39 | ~156 |
+
+domain_aware_no_revision_triage 用约 50% 的 API 调用量达到与 verifier_first 相同的 100% 成功率。
+
+### 关键洞察
+
+1. **对弱 revision 模型，跳过 revision 直接升级是最优策略** — revision 对 0.5B 模型完全无效 (0/17)
+2. **Drift latch 解决了尾部漂移消失问题** — 一旦检测到域漂移就锁定
+3. **accept_low_signal 是所有失败的根因** — 对低 signal 任务直接验证比信任 signal 更安全
+4. **简化后的协议等价于 "verify-then-escalate (no revision)"** — drift_latch 仅作为诊断标记
+
+### 完整演进路径
+
+| 版本 | 变更 | Semantic | Counterfactual |
+|------|------|:-------:|:------------:|
+| V0 (window=10, no latch) | 初始 domain_aware | 65% | 60% |
+| V1 (window=5, no latch) | 缩小窗口 | 85% | 80% |
+| V2 (window=5, latch) | 漂移锁存 | 95% | 92% |
+| **V3 (window=5, latch, simplified)** | **移除 accept_low_signal** | **100%** | **100%** |
+
+### Smoke Test
+
+- `python tests/smoke_test.py` — all passed
+
+**结果文件**: `results/capability_benchmark/cross_domain_llm_1776896012.json`
+
+---
+
+## 2026-04-23 诚实评估：domain_aware_no_revision_triage V3 的实际含义
+
+### 核心发现
+
+V3 协议简化后，domain_aware_no_revision_triage 的实际行为是：
+
+```
+if verification.passed:
+    accept
+else:
+    escalate (no revision attempt)
+```
+
+**drift_latch 不影响决策行为**，只影响决策名称（domain_aware_escalate vs pre_latch_escalate）。
+
+### 诚实评估
+
+1. **V3 不是真正的域感知路由** — 它不根据域漂移调整策略。BatchHealthMonitor 和 drift_latch 仅作为诊断标记存在。
+2. **V3 等价于 "verify-then-escalate-no-revision"** — 一个更简单、更诚实的名称。
+3. **100% 成功率来自 escalation 路径的 oracle 假设** — 按 AGENTS.md 规则 1，不能声称 100% 是真实结果。escalation 路径假设 oracle 总能给出正确答案。
+4. **成本优势是真实的** — 省掉无效的 revision 调用（0.5B 模型 revision 成功率 0%）。domain_aware: 0 rev + 39 esc ≈ 79 API 调用; verifier_first: 38-39 rev + 37-39 esc ≈ 156 API 调用。
+
+### 纯 code-20 回归测试
+
+| 协议 | Monitor | 成功率 | Revisions | Escalations |
+|------|---------|:-----:|:---------:|:-----------:|
+| domain_aware_no_revision_triage | semantic | 100% | 0 | 19 |
+| domain_aware_no_revision_triage | counterfactual | 100% | 0 | 19 |
+| verifier_first | semantic | 100% | 20 | 19 |
+| verifier_first | counterfactual | 100% | 18 | 17 |
+
+纯 code 场景不回归。
+
+### 可安全声称的结论
+
+1. ✅ **对弱 revision 模型 (0.5B)，跳过 revision 直接升级是最优策略** — revision 成功率 0%，省掉 revision 调用是纯收益
+2. ✅ **verify-then-escalate-no-revision 用约 50% API 调用量达到与 verifier_first 相同成功率** — 成功率数字受 oracle 假设影响
+3. ✅ **Drift latch 解决了 BatchHealthMonitor 窗口滑动导致的尾部漂移消失** — 85%→95%
+4. ⚠️ **"域感知路由"标签在 V3 中是误称** — 实际协议不使用域漂移信号做决策
+
+### 不能声称的结论
+
+- ❌ 不能声称 100% 路由成功率是真实结果（oracle 假设）
+- ❌ 不能声称 V3 是"域感知"路由（drift_latch 不影响决策）
+- ❌ 不能声称成本降低 50%（基于假设成本模型，按 AGENTS.md 规则 3）
+
+### 下一步方向
+
+1. ~~**将 domain_aware_no_revision_triage 重命名为 verify_escalate_no_revision**~~ — ✅ 已完成
+2. **探索真正的域感知路由** — 在有 revision 能力的模型上，drift_latch 可以触发从"尝试 revision"到"直接 escalate"的策略切换
+3. **测试更强模型** — 当 revision 有效时，域感知路由才有真正的决策价值
+
+---
+
+## 2026-04-23 协议重命名：domain_aware_no_revision_triage → verify_escalate_no_revision
+
+**类型**: 协议重命名（诚实性修正）
+
+**变更**:
+- `experiments/capability/llm_routing_experiment.py`: protocol 名从 `domain_aware_no_revision_triage` 改为 `verify_escalate_no_revision`
+- `experiments/capability/cross_domain_llm_routing.py`: protocols 列表同步更新
+- BatchHealthMonitor 条件判断从 `"domain_aware" in protocol` 改为 `protocol == "verify_escalate_no_revision"`
+
+**验证**:
+- 编译通过
+- smoke test 通过
+- 跨域实验结果不变: semantic 40/40 (100%), counterfactual 40/40 (100%), 0 revisions
+
+**理由**: V3 协议的实际行为是"验证通过就接受，验证失败就升级（不尝试 revision）"，drift_latch 不影响决策行为。`verify_escalate_no_revision` 更准确地描述了实际行为。
+
+**结果文件**: `results/capability_benchmark/cross_domain_llm_1776901278.json`
+---
+
+## 2026-04-24 LSG Phase 16: Randomized Sequence Fuzz Smoke Coverage
+
+**Type**: LSG regression hardening
+
+**Goal**: Promote randomized multi-step, multi-candidate sequence fuzzing into the smoke path so bandwidth, commit-log, and acknowledged-state invariants are checked on fixed random seeds.
+
+### Changes
+
+- `tests/smoke_test.py`
+  - Added fixed-seed `run_fuzz()` coverage inside the LSG smoke section.
+  - Assertions cover `passed`, `failed_seeds`, `max_active_observed`, per-seed commit-log invariants, and acknowledged-state mutation errors.
+- `tests/smoke_test.py`
+  - Removed an unused `tempfile.TemporaryDirectory()` wrapper from `test_transfer_matrix_runner`.
+  - Reason: the first smoke run failed during Windows temp-dir cleanup before reaching the LSG checks; the temp directory was not used by the test.
+- Added `LSG_PHASE16_RESULT_2026-04-24.md`.
+
+### Result
+
+Artifact command:
+
+```text
+python experiments/capability/rewrite_sequence_fuzz.py --seeds 0,1,2,3,4 --num-steps 12 --num-candidates 8 --max-observations-per-step 5 --bandwidth-limit 3 --label phase16_smoke
+```
+
+Artifact summary:
+
+```text
+passed: true
+num_seeds: 5
+failed_seeds: []
+max_active_observed: 3
+total_commit_log_count: 13
+```
+
+Result file:
+
+```text
+results/capability_generalization/rewrite_sequence_fuzz_phase16_smoke.json
+```
+
+### Validation
+
+- `python tests/test_rewrite_sequence_fuzz.py` passed.
+- `python tests/smoke_test.py` passed after removing the unused temp-dir wrapper.
+- Existing Hugging Face unauthenticated-request warning still appears during smoke but does not fail the run.
+
+### Interpretation
+
+This is an engineering regression guard, not a theorem-level guarantee:
+
+> randomized multi-candidate sequence pressure does not violate the current commit-log invariants, bandwidth cap, or acknowledged-state absorption checks on the fixed smoke/fuzz seeds.
+
+### Remaining Useful Work
+
+- repeated proposal IDs distinct from candidate IDs
+- explicit multi-step refilling behavior after top candidates commit
+- optional revision/rollback protocol for acknowledged candidates
+
+---
+
+## 2026-04-24 LSG Phase 17: Proposal/Candidate Identity Boundary
+
+**Type**: LSG identity-boundary hardening
+
+**Goal**: Lock the distinction between proposal-event identity and durable candidate-state identity.
+
+Boundary:
+
+```text
+proposal_id = one proposal event
+candidate_id = durable candidate state updated by observations
+```
+
+### Changes
+
+- `core/rewrite_dynamics.py`
+  - `ProposalEnvelope.__post_init__()` now rejects `proposal_id == candidate_id`.
+- `core/rewrite_sequence_replay.py`
+  - Added `check_sequence_identity_invariants(raw_case)`.
+  - Sequence replay rows now include `identity_invariants`.
+  - Sequence summaries now include `identity_failed_count`.
+  - `replay_sequence_case()` requires both commit-log invariants and identity invariants to pass.
+- `tests/test_rewrite_proposal_provider.py`
+  - Added schema test for proposal/candidate ID collision.
+- `tests/test_rewrite_sequence_replay.py`
+  - Added duplicate proposal ID and cross-candidate proposal ID reuse test.
+- `tests/smoke_test.py`
+  - Added `identity_failed_count == 0` assertion for the standard sequence fixture.
+- Added `LSG_PHASE17_RESULT_2026-04-24.md`.
+
+### Result
+
+Artifact command:
+
+```text
+python experiments\capability\rewrite_sequence_replay_fixture.py --label phase17_identity
+```
+
+Artifact summary:
+
+```text
+passed: true
+num_cases: 3
+failed_count: 0
+invariant_failed_count: 0
+identity_failed_count: 0
+total_commit_log_count: 5
+```
+
+Result file:
+
+```text
+results/capability_generalization/rewrite_sequence_replay_fixture_phase17_identity.json
+```
+
+### Validation
+
+- `python -m py_compile core\rewrite_dynamics.py core\rewrite_sequence_replay.py tests\test_rewrite_proposal_provider.py tests\test_rewrite_sequence_replay.py tests\smoke_test.py` passed.
+- `python tests\test_rewrite_proposal_provider.py` passed.
+- `python tests\test_rewrite_sequence_replay.py` passed.
+- `python tests\smoke_test.py` passed.
+- Existing Hugging Face unauthenticated-request warning still appears during smoke but does not fail the run.
+
+### Interpretation
+
+This prevents audit ambiguity where a proposal event ID becomes indistinguishable from the durable candidate state key it is trying to modify.
+
+### Remaining Useful Work
+
+- explicit multi-step refilling behavior after top candidates commit
+- optional revision/rollback protocol for acknowledged candidates
+- larger provider capture set for identity/error distribution checks
+
+---
+
+## 2026-04-24 LSG Phase 18: Multi-Step Refill Semantics
+
+**Type**: LSG bandwidth/refill semantics hardening
+
+**Goal**: Make the bandwidth refill rule explicit.
+
+Rule:
+
+```text
+same step: no refill after top candidates commit
+next step: lower-priority candidates may refill if observed again and still qualify
+```
+
+### Changes
+
+- `data/lsg/proposal_sequence_replay_v0.json`
+  - Added `multi_step_refill_after_top3_commit`.
+  - Step 1 presents 5 high-pressure candidates with bandwidth limit 3.
+  - Top 3 commit in step 1.
+  - Lower 2 remain uncommitted in step 1.
+  - Lower 2 are observed again in step 2 and commit.
+- `tests/test_rewrite_sequence_replay.py`
+  - Updated sequence summary baseline to 4 cases and 10 total commits.
+  - Added `test_multi_step_refill_after_top3_commit`.
+- `tests/smoke_test.py`
+  - Updated sequence replay smoke baseline to 4 cases and 10 total commits.
+- Added `LSG_PHASE18_RESULT_2026-04-24.md`.
+
+### Result
+
+Artifact command:
+
+```text
+python experiments\capability\rewrite_sequence_replay_fixture.py --label phase18_refill
+```
+
+Artifact summary:
+
+```text
+passed: true
+num_cases: 4
+failed_count: 0
+invariant_failed_count: 0
+identity_failed_count: 0
+total_commit_log_count: 10
+```
+
+Result file:
+
+```text
+results/capability_generalization/rewrite_sequence_replay_fixture_phase18_refill.json
+```
+
+### Validation
+
+- `python -m json.tool data\lsg\proposal_sequence_replay_v0.json` passed.
+- `python -m py_compile core\rewrite_sequence_replay.py tests\test_rewrite_sequence_replay.py tests\smoke_test.py` passed.
+- `python tests\test_rewrite_sequence_replay.py` passed.
+- `python tests\smoke_test.py` passed.
+- Existing Hugging Face unauthenticated-request warning still appears during smoke but does not fail the run.
+
+### Interpretation
+
+Phase 18 closes the refill ambiguity from Phase 15:
+
+> bandwidth overflow suppresses candidates for the current step only; future observations can bring those candidates back into active selection.
+
+### Remaining Useful Work
+
+- optional revision/rollback protocol for acknowledged candidates
+- larger provider capture set for identity/error distribution checks
+- stress/fuzz case that mixes refill, duplicate proposal interception, and acknowledged absorption
+
+---
+
+## 2026-04-24 LSG Phase 19: Audit-Only Revision Proposals
+
+**Type**: LSG acknowledged-state revision semantics hardening
+
+**Goal**: Make post-acknowledgement revision attempts explicit without allowing silent state mutation.
+
+Rule:
+
+```text
+ordinary observation after acknowledgement: ignored
+revision request after acknowledgement: recorded as audit-only RevisionProposalEvent
+state mutation after acknowledgement: not supported in Phase 19
+```
+
+### Changes
+
+- `core/rewrite_dynamics.py`
+  - Added `RevisionProposalEvent`.
+  - Added `RewriteSystemState.revision_log`.
+  - Added `propose_revision_for_acknowledged_candidate`.
+  - Added `check_revision_log_invariants`.
+  - Added `revision_events` to `simulate_case` timeline rows.
+- `tests/test_rewrite_dynamics.py`
+  - Added invalid executed-revision validation.
+  - Added audit-only revision proposal coverage for acknowledged candidates.
+  - Added rejection coverage for unacknowledged revision targets.
+- `tests/smoke_test.py`
+  - Added smoke coverage that revision proposals do not mutate acknowledged candidate state or append acknowledgement commits.
+- Added `LSG_PHASE19_RESULT_2026-04-24.md`.
+
+### Result
+
+Core invariant:
+
+```text
+acknowledged candidate + later revision proposal
+=> revision_log += 1
+=> commit_log unchanged
+=> candidate disturbance/stability/phase unchanged
+=> revision_executed == false
+```
+
+Unsupported behavior remains blocked:
+
+```text
+revision proposal for unacknowledged candidate: rejected
+executed revision without all gates and approval: rejected
+executed revision state transition: not implemented in Phase 19
+```
+
+### Validation
+
+- `python tests\test_rewrite_dynamics.py` passed.
+- `python tests\smoke_test.py` passed.
+- `python -m py_compile core\rewrite_dynamics.py tests\test_rewrite_dynamics.py tests\smoke_test.py` was attempted but failed with Windows `[WinError 5] Access denied` while replacing `core\__pycache__\rewrite_dynamics.cpython-314.pyc`.
+- Existing Hugging Face unauthenticated-request warning still appears during smoke but does not fail the run.
+
+### Interpretation
+
+Phase 19 separates two cases that were previously only implicit:
+
+> later observation against acknowledged state: ignored by absorbing-state rule
+
+> formal revision request against acknowledged state: recorded in `revision_log`, but not executed
+
+This gives LSG a clean audit boundary before any future rollback/revision execution protocol is introduced.
+
+### Remaining Useful Work
+
+- define actual rollback/revision execution protocol with explicit approval
+- add revision proposal cases to sequence replay fixtures
+- add mixed fuzz coverage combining refill, identity collisions, and revision proposals
+
+---
+
+## 2026-04-24 LSG Phase 20: Revision Requests in Sequence Replay
+
+**Type**: LSG replay/invariant hardening
+
+**Goal**: Make Phase 19 audit-only revision semantics visible in multi-step replay fixtures.
+
+Rule:
+
+```text
+sequence step observations may acknowledge a candidate
+same or later step revision_requests may record audit-only revision proposals
+revision_requests do not mutate acknowledged candidate state
+revision_requests do not append acknowledgement commit events
+```
+
+### Changes
+
+- `core/rewrite_sequence_replay.py`
+  - Replaced black-box `simulate_case` replay with explicit per-step `step_system`.
+  - Added `revision_requests` handling after step observations.
+  - Added `revision_invariants` using `check_revision_log_invariants`.
+  - Added `revision_log_count`, `expected_revision_count`, `total_revision_log_count`.
+  - Added serializable `commit_log` and `revision_log` rows to replay output.
+- `data/lsg/proposal_sequence_replay_v0.json`
+  - Added `revision_request_after_acknowledgement_audit_only`.
+  - The case acknowledges `c_revision_anchor`, records one audit-only revision request, then verifies a later low-pressure observation does not rewrite acknowledged state.
+- `tests/test_rewrite_sequence_replay.py`
+  - Updated fixture baseline to 5 cases, 11 commit events, 1 revision event.
+  - Added `test_revision_request_after_acknowledgement_is_audit_only`.
+- `tests/smoke_test.py`
+  - Updated sequence replay smoke expectations for revision invariants and revision count.
+- Added `LSG_PHASE20_RESULT_2026-04-24.md`.
+
+### Result
+
+Artifact command:
+
+```text
+python experiments\capability\rewrite_sequence_replay_fixture.py --label phase20_revision_replay
+```
+
+Artifact summary:
+
+```text
+passed: true
+num_cases: 5
+failed_count: 0
+invariant_failed_count: 0
+revision_invariant_failed_count: 0
+identity_failed_count: 0
+total_commit_log_count: 11
+total_revision_log_count: 1
+```
+
+Result file:
+
+```text
+results/capability_generalization/rewrite_sequence_replay_fixture_phase20_revision_replay.json
+```
+
+### Validation
+
+- `python -m json.tool data\lsg\proposal_sequence_replay_v0.json` passed.
+- `python tests\test_rewrite_sequence_replay.py` passed.
+- `python experiments\capability\rewrite_sequence_replay_fixture.py --label phase20_revision_replay` passed.
+- `python tests\smoke_test.py` passed.
+- Existing Hugging Face unauthenticated-request warning still appears during smoke but does not fail the run.
+
+### Interpretation
+
+Phase 20 closes the replay coverage gap from Phase 19:
+
+> acknowledged-state revision is now represented as durable replay data, not only as an in-memory dynamics API.
+
+The current rule remains conservative:
+
+```text
+revision request = audit record
+revision execution = not implemented yet
+```
+
+### Remaining Useful Work
+
+- define explicit revision execution / rollback protocol with approval
+- add negative sequence cases for invalid revision targets
+- extend randomized sequence fuzz to generate revision requests after acknowledgements
+
+---
+
+## 2026-04-24 LSG Phase 21: Revision Fuzz and Negative Replay Cases
+
+**Type**: LSG randomized replay/invariant hardening
+
+**Goal**: Verify audit-only revision semantics outside the hand-authored happy-path fixture.
+
+### Changes
+
+- `experiments/capability/rewrite_sequence_fuzz.py`
+  - Replaced `simulate_case` with explicit per-step `step_system`.
+  - Injects random audit-only revision requests for acknowledged candidates.
+  - Validates `check_revision_log_invariants`.
+  - Checks revision requests do not mutate acknowledged candidate disturbance/stability.
+  - Reports `revision_log_count`, `total_revision_log_count`, `revision_invariants`, and `revision_mutation_errors`.
+- `tests/test_rewrite_sequence_fuzz.py`
+  - Asserts fuzz produces revision audit events.
+  - Asserts revision invariants pass.
+  - Asserts revision requests do not mutate acknowledged state.
+- `tests/test_rewrite_sequence_replay.py`
+  - Added negative case: revision request against unacknowledged target is rejected.
+  - Added negative case: revision request against missing target is rejected.
+- Added `LSG_PHASE21_RESULT_2026-04-24.md`.
+
+### Result
+
+Artifact command:
+
+```text
+python experiments\capability\rewrite_sequence_fuzz.py --seeds 0,1,2,3,4 --num-steps 12 --num-candidates 8 --max-observations-per-step 5 --bandwidth-limit 3 --label phase21_revision_fuzz
+```
+
+Artifact summary:
+
+```text
+passed: true
+num_seeds: 5
+failed_seeds: []
+max_active_observed: 3
+total_commit_log_count: 13
+total_revision_log_count: 31
+```
+
+Result file:
+
+```text
+results/capability_generalization/rewrite_sequence_fuzz_phase21_revision_fuzz.json
+```
+
+### Validation
+
+- `python tests\test_rewrite_sequence_replay.py` passed.
+- `python tests\test_rewrite_sequence_fuzz.py` passed.
+- `python experiments\capability\rewrite_sequence_fuzz.py --seeds 0,1,2,3,4 --num-steps 12 --num-candidates 8 --max-observations-per-step 5 --bandwidth-limit 3 --label phase21_revision_fuzz` passed.
+- `python tests\smoke_test.py` passed.
+- Existing Hugging Face unauthenticated-request warning still appears during smoke but does not fail the run.
+
+### Interpretation
+
+Phase 21 gives the current revision semantics three independent checks:
+
+```text
+direct dynamics unit tests
+hand-authored sequence replay fixture
+randomized sequence fuzz with revision requests
+```
+
+The rule remains:
+
+```text
+revision request = durable audit record
+revision request != state mutation
+revision request != rollback execution
+```
+
+Invalid revision targets are rejected instead of silently logged.
+
+### Remaining Useful Work
+
+- define explicit approval-based revision execution / rollback protocol
+- decide whether revision execution should create a new candidate version or revoke an acknowledged candidate
+- add versioned candidate identity before implementing actual rollback
+
+---
+
+## 2026-04-24 LSG Phase 22: Versioned Candidate Identity
+
+**Type**: LSG identity/versioning hardening
+
+**Goal**: Add version identity before any rollback/revision execution protocol.
+
+### Changes
+
+- `core/rewrite_dynamics.py`
+  - Added `CandidateState.version`, default `1`.
+  - Added `CommitEvent.candidate_version`.
+  - Added `RevisionProposalEvent.target_version`.
+  - `propose_revision_for_acknowledged_candidate` accepts optional `target_version`.
+  - Stale `target_version` is rejected.
+  - Revision invariants now check target version matches current acknowledged candidate version.
+  - Timelines include candidate version.
+  - CEE projection raw value includes `candidate_version`.
+- `core/rewrite_sequence_replay.py`
+  - Sequence timeline rows include candidate version.
+  - Revision request payload may include `target_version`.
+  - Stale or invalid target versions are rejected.
+  - Commit-log invariants check commit event version matches candidate version.
+- `data/lsg/proposal_sequence_replay_v0.json`
+  - Revision fixture now includes `"target_version": 1`.
+- `experiments/capability/rewrite_sequence_fuzz.py`
+  - Fuzz timeline rows include candidate version.
+- `tests/test_rewrite_dynamics.py`
+  - Commit/revision event validation now covers version fields.
+  - Audit-only revision proposal checks commit and revision versions.
+  - Added stale-version rejection test.
+- `tests/test_rewrite_sequence_replay.py`
+  - Replay revision fixture checks commit/revision version fields.
+  - Added stale target version rejection test.
+- `tests/smoke_test.py`
+  - LSG smoke checks commit/revision version binding.
+- Added `LSG_PHASE22_RESULT_2026-04-24.md`.
+
+### Result
+
+Replay artifact command:
+
+```text
+python experiments\capability\rewrite_sequence_replay_fixture.py --label phase22_versioned_identity
+```
+
+Replay artifact summary:
+
+```text
+passed: true
+num_cases: 5
+failed_count: 0
+invariant_failed_count: 0
+revision_invariant_failed_count: 0
+identity_failed_count: 0
+total_commit_log_count: 11
+total_revision_log_count: 1
+```
+
+Replay result file:
+
+```text
+results/capability_generalization/rewrite_sequence_replay_fixture_phase22_versioned_identity.json
+```
+
+Fuzz artifact command:
+
+```text
+python experiments\capability\rewrite_sequence_fuzz.py --seeds 0,1,2,3,4 --num-steps 12 --num-candidates 8 --max-observations-per-step 5 --bandwidth-limit 3 --label phase22_versioned_fuzz
+```
+
+Fuzz artifact summary:
+
+```text
+passed: true
+num_seeds: 5
+failed_seeds: []
+max_active_observed: 3
+total_commit_log_count: 13
+total_revision_log_count: 31
+```
+
+Fuzz result file:
+
+```text
+results/capability_generalization/rewrite_sequence_fuzz_phase22_versioned_fuzz.json
+```
+
+### Validation
+
+- `python tests\test_rewrite_dynamics.py` passed.
+- `python tests\test_rewrite_sequence_replay.py` passed.
+- `python tests\test_rewrite_sequence_fuzz.py` passed.
+- `python -m json.tool data\lsg\proposal_sequence_replay_v0.json` passed.
+- `python experiments\capability\rewrite_sequence_replay_fixture.py --label phase22_versioned_identity` passed.
+- `python experiments\capability\rewrite_sequence_fuzz.py --seeds 0,1,2,3,4 --num-steps 12 --num-candidates 8 --max-observations-per-step 5 --bandwidth-limit 3 --label phase22_versioned_fuzz` passed.
+- `python tests\smoke_test.py` passed.
+- Existing Hugging Face unauthenticated-request warning still appears during smoke but does not fail the run.
+
+### Interpretation
+
+Phase 22 prevents a future rollback protocol from being underspecified:
+
+> durable candidate ID identifies the line of state; candidate version identifies the specific acknowledged state revision.
+
+Current behavior remains conservative:
+
+```text
+all candidates start at version 1
+acknowledgement records version 1
+revision audit targets version 1
+no execution creates version 2 yet
+```
+
+### Remaining Useful Work
+
+- design explicit revision execution event
+- decide whether execution creates `version + 1` or a linked replacement candidate
+- define rollback semantics separately from revision semantics
+- add sequence fixture for approved-but-not-executed revision before implementing execution
+
+---
+
+## 2026-04-24 LSG Phase 23: Approval Is Not Execution
+
+**Type**: LSG revision protocol boundary hardening
+
+**Goal**: Explicitly separate revision approval from revision execution before implementing any state-changing revision protocol.
+
+### Changes
+
+- `core/rewrite_dynamics.py`
+  - `check_revision_log_invariants` now reports `approved_revision_count` and `executed_revision_count`.
+- `core/rewrite_sequence_replay.py`
+  - Sequence summaries now report `total_approved_revision_count` and `total_executed_revision_count`.
+- `data/lsg/proposal_sequence_replay_v0.json`
+  - Added `approved_revision_request_remains_audit_only`.
+  - Case records an approved revision request against version 1.
+  - Case verifies candidate remains acknowledged version 1.
+- `tests/test_rewrite_sequence_replay.py`
+  - Fixture baseline updated to 6 cases, 12 commit events, 2 revision events.
+  - Added `test_approved_revision_request_still_does_not_execute`.
+- `tests/smoke_test.py`
+  - Smoke now asserts one approved revision and zero executed revisions in sequence replay.
+- Added `LSG_PHASE23_RESULT_2026-04-24.md`.
+
+### Result
+
+Artifact command:
+
+```text
+python experiments\capability\rewrite_sequence_replay_fixture.py --label phase23_approval_not_execution
+```
+
+Artifact summary:
+
+```text
+passed: true
+num_cases: 6
+failed_count: 0
+invariant_failed_count: 0
+revision_invariant_failed_count: 0
+identity_failed_count: 0
+total_commit_log_count: 12
+total_revision_log_count: 2
+total_approved_revision_count: 1
+total_executed_revision_count: 0
+```
+
+Result file:
+
+```text
+results/capability_generalization/rewrite_sequence_replay_fixture_phase23_approval_not_execution.json
+```
+
+### Validation
+
+- `python -m json.tool data\lsg\proposal_sequence_replay_v0.json` passed.
+- `python tests\test_rewrite_dynamics.py` passed.
+- `python tests\test_rewrite_sequence_replay.py` passed.
+- `python tests\test_rewrite_sequence_fuzz.py` passed.
+- `python experiments\capability\rewrite_sequence_replay_fixture.py --label phase23_approval_not_execution` passed.
+- `python tests\smoke_test.py` passed.
+- Existing Hugging Face unauthenticated-request warning still appears during smoke but does not fail the run.
+
+### Interpretation
+
+Phase 23 makes the current boundary explicit:
+
+```text
+revision request without approval -> audit only
+revision request with approval -> audit only
+revision execution -> not implemented
+rollback -> not implemented
+```
+
+Approval is now observable in summary data without implying execution.
+
+### Remaining Useful Work
+
+- define `RevisionExecutionEvent` as a separate event type
+- require execution to reference an approved `RevisionProposalEvent`
+- decide whether execution creates `CandidateState.version + 1` or a replacement candidate line
+- keep rollback as a separate protocol from revision execution
+
+---
+
+## 2026-04-24 LSG Phase 24: Revision Execution Event Schema
+
+**Type**: LSG revision execution boundary hardening
+
+**Goal**: Define a separate execution-event schema and draft validator without mutating state.
+
+### Changes
+
+- `core/rewrite_dynamics.py`
+  - Added `RevisionExecutionEvent`.
+  - Added `draft_revision_execution_event`.
+  - Added `check_revision_execution_event_against_state`.
+  - Execution draft requires an approved `RevisionProposalEvent`.
+  - Execution draft references `from_version` and `to_version = from_version + 1`.
+  - Execution draft does not mutate `CandidateState.version`.
+  - `execution_executed=True` is explicitly rejected in Phase 24.
+- `tests/test_rewrite_dynamics.py`
+  - Added schema validation for `RevisionExecutionEvent`.
+  - Added approved-proposal draft test.
+  - Added unapproved-proposal rejection test.
+  - Verifies drafting an execution event does not mutate acknowledged state.
+- `tests/smoke_test.py`
+  - Smoke now drafts a revision execution event from an approved revision proposal.
+  - Smoke checks `from_version`, `to_version`, and `execution_executed=False`.
+- Added `LSG_PHASE24_RESULT_2026-04-24.md`.
+
+### Result
+
+Replay artifact command:
+
+```text
+python experiments\capability\rewrite_sequence_replay_fixture.py --label phase24_execution_event_schema
+```
+
+Replay artifact summary:
+
+```text
+passed: true
+num_cases: 6
+failed_count: 0
+invariant_failed_count: 0
+revision_invariant_failed_count: 0
+identity_failed_count: 0
+total_commit_log_count: 12
+total_revision_log_count: 2
+total_approved_revision_count: 1
+total_executed_revision_count: 0
+```
+
+Result file:
+
+```text
+results/capability_generalization/rewrite_sequence_replay_fixture_phase24_execution_event_schema.json
+```
+
+### Validation
+
+- `python tests\test_rewrite_dynamics.py` passed.
+- `python tests\test_rewrite_sequence_replay.py` passed.
+- `python tests\test_rewrite_sequence_fuzz.py` passed.
+- `python experiments\capability\rewrite_sequence_replay_fixture.py --label phase24_execution_event_schema` passed.
+- `python tests\smoke_test.py` passed.
+- Existing Hugging Face unauthenticated-request warning still appears during smoke but does not fail the run.
+
+### Interpretation
+
+Phase 24 creates a safe seam for future revision execution:
+
+```text
+RevisionProposalEvent = audit request
+RevisionExecutionEvent = drafted future execution transition
+rollback = separate future protocol
+state mutation = not implemented
+```
+
+An approved proposal may be used to draft a version-incrementing execution event, but the draft itself is not an executed transition.
+
+### Remaining Useful Work
+
+- define an execution log separate from revision request log
+- implement execution as a controlled version increment only after deciding state transition semantics
+- define rollback as a different event family, not a special case of revision execution
+
+---
+
+## 2026-04-24 LSG Phase 25: Revision Execution Draft Log
+
+**Type**: LSG execution-draft audit hardening
+
+**Goal**: Make revision execution drafts durable and replayable without executing state mutation.
+
+### Changes
+
+- `core/rewrite_dynamics.py`
+  - Added `RewriteSystemState.revision_execution_log`.
+  - Added `draft_revision_execution_for_candidate`.
+  - Added `record_revision_execution_draft`.
+  - Added `check_revision_execution_log_invariants`.
+- `core/rewrite_sequence_replay.py`
+  - Added `revision_execution_drafts` replay payload.
+  - Added `apply_revision_execution_draft`.
+  - Timeline rows now include `revision_execution_events`.
+  - Replay output includes serialized `revision_execution_log`.
+  - Replay output includes `revision_execution_invariants`.
+  - Sequence summary includes `total_revision_execution_draft_count`, `total_executed_revision_execution_count`, and `revision_execution_invariant_failed_count`.
+- `data/lsg/proposal_sequence_replay_v0.json`
+  - Approved revision fixture now drafts one execution event via `revision_execution_drafts`.
+- `tests/test_rewrite_dynamics.py`
+  - Added execution-log test proving draft append does not mutate candidate state.
+- `tests/test_rewrite_sequence_replay.py`
+  - Asserts one execution draft is logged.
+  - Asserts execution draft has `from_version=1`, `to_version=2`, `execution_executed=false`.
+- `tests/smoke_test.py`
+  - Smoke now records an execution draft and checks execution-log invariants.
+  - Smoke checks sequence replay has one draft and zero executed execution events.
+- Added `LSG_PHASE25_RESULT_2026-04-24.md`.
+
+### Result
+
+Artifact command:
+
+```text
+python experiments\capability\rewrite_sequence_replay_fixture.py --label phase25_execution_log
+```
+
+Artifact summary:
+
+```text
+passed: true
+num_cases: 6
+failed_count: 0
+invariant_failed_count: 0
+revision_invariant_failed_count: 0
+revision_execution_invariant_failed_count: 0
+identity_failed_count: 0
+total_commit_log_count: 12
+total_revision_log_count: 2
+total_approved_revision_count: 1
+total_executed_revision_count: 0
+total_revision_execution_draft_count: 1
+total_executed_revision_execution_count: 0
+```
+
+Result file:
+
+```text
+results/capability_generalization/rewrite_sequence_replay_fixture_phase25_execution_log.json
+```
+
+### Validation
+
+- `python -m json.tool data\lsg\proposal_sequence_replay_v0.json` passed.
+- `python tests\test_rewrite_dynamics.py` passed.
+- `python tests\test_rewrite_sequence_replay.py` passed.
+- `python tests\test_rewrite_sequence_fuzz.py` passed.
+- `python experiments\capability\rewrite_sequence_replay_fixture.py --label phase25_execution_log` passed.
+- `python tests\smoke_test.py` passed.
+- Existing Hugging Face unauthenticated-request warning still appears during smoke but does not fail the run.
+
+### Interpretation
+
+Phase 25 makes execution drafting durable and replayable:
+
+```text
+revision proposal log = request layer
+revision execution log = draft execution layer
+CandidateState.version mutation = still not implemented
+rollback = still separate future protocol
+```
+
+### Remaining Useful Work
+
+- define the exact state transition for executed revision
+- decide whether execution updates existing candidate to `version + 1` or creates a replacement candidate line
+- add a negative execution-draft replay case for unapproved proposals
+- keep rollback separate from revision execution
+
+---
+
+## 2026-04-24 LSG Phase 25 (continued): Revision Execution State Mutation
+
+**Type**: LSG revision execution state transition implementation
+
+**Goal**: Implement the controlled state mutation that Phase 24-25 deliberately left unimplemented.
+
+### Changes
+
+- `core/rewrite_dynamics.py`
+  - Removed `execution_executed=True` rejection from `RevisionExecutionEvent.__post_init__`.
+  - Added `execute_revision_event(state, execution_event_id)` — the only function that mutates an acknowledged candidate.
+  - Execution validates: event not already executed, proposal approved, version matches, candidate acknowledged.
+  - Mutates: `candidate.disturbance`, `candidate.stability`, `candidate.version += 1`.
+  - Marks both proposal and execution event as executed.
+  - Updated `check_revision_execution_event_against_state` to report `already_executed` instead of `not_supported`.
+- `tests/test_rewrite_execution.py`
+  - Added comprehensive tests for Phase 25 execution semantics.
+  - `test_execute_approved_revision_increments_version`: approved execution -> version 2.
+  - `test_execute_without_approval_fails`: unapproved proposal cannot draft execution.
+  - `test_execute_already_executed_fails`: double execution rejected.
+  - `test_execute_version_mismatch_fails`: stale version rejected.
+  - `test_invariants_pass_after_execution`: execution log invariants hold post-execution.
+  - `test_execution_log_tracks_executed_events`: execution log records executed state.
+
+### Validation
+
+- `python tests\test_rewrite_execution.py` passed.
+- `python tests\test_rewrite_dynamics.py` passed.
+- `python tests\test_rewrite_sequence_replay.py` passed.
+- `python tests\test_rewrite_sequence_fuzz.py` passed.
+- `python tests\smoke_test.py` passed.
+
+### Interpretation
+
+Phase 25 completes the LSG revision lifecycle:
+
+```text
+revision proposal -> audit request (Phase 19)
+revision approval -> observable but not executed (Phase 23)
+revision execution draft -> durable replay data (Phase 25a)
+revision execution -> state mutation with version increment (Phase 25b)
+rollback -> separate future protocol (not implemented)
+```
+
+The execution boundary is now explicit:
+- Only `execute_revision_event()` can mutate acknowledged candidates.
+- It requires an approved proposal, matching version, and unexecuted event.
+- Execution creates `version + 1`, preserving audit trail.
+- Double execution is prevented.
+
+### Remaining Useful Work
+
+- define rollback as a separate event family (not version increment)
+- integrate with Capability Router: router decisions as revision proposals
+- integrate with TopoMem OBD: drift signals as revision proposals
+- stress test: mixed fuzz with execution events
+
+---
+
+## 2026-04-24 LSG Phase 26: Rollback Protocol + End-to-End Integration
+
+**Type**: LSG core feature — rollback as separate event family
+
+**Goal**: Implement rollback as a version-decrementing event family, distinct from revision execution (version incrementing). Enable full three-system roundtrip: Router→Bridge→LSG→Policy Change→Rollback.
+
+### New Code
+
+- `core/rewrite_dynamics.py` additions:
+  - `RollbackEvent` dataclass: frozen, requires `to_version == from_version - 1`, `from_version >= 2`, `approval_open=True`
+  - `draft_rollback_event()`: creates rollback from approved proposal, restores previous disturbance/stability from `_find_previous_state()`
+  - `check_rollback_event_against_state()`: pre-execution validation + post-execution audit (with subsequent-rollback awareness)
+  - `execute_rollback_event()`: the ONLY function that decrements candidate version
+  - `check_rollback_log_invariants()`: validates all rollback events
+  - `_find_previous_state()`: searches commit_log and revision_execution_log for previous version's state
+  - `rollback_log` field added to `RewriteSystemState`
+  - Updated `check_revision_execution_event_against_state()` to account for rollbacks in post-execution audit
+
+- `core/router_lsg_bridge.py` additions:
+  - `approve_and_rollback_proposal()`: approves + drafts + executes rollback through LSG
+  - `_revert_policy_change()`: reverses policy state after rollback
+  - `_ensure_routing_policy_candidate()`: creates candidate with commit event for rollback history
+
+- `core/weak_model_confidence.py` fix:
+  - Component scores changed from [0, 0.25] to [0, 1.0] range
+  - Calibration formula simplified: `0.05 + 0.9 * total` (total naturally in [0, 1.0])
+
+### New Tests
+
+- `tests/test_rollback.py`: 12 tests covering RollbackEvent validation, draft, execute, and revision+rollback coexistence
+- `tests/test_e2e_integration.py`: 3 end-to-end tests covering full escalation lifecycle, drift lifecycle, and combined flow with independent rollback
+
+### Key Design Decisions
+
+1. **Rollback is NOT a version increment** — it decrements version by exactly 1
+2. **Rollback from version 1 is impossible** — there's nothing to roll back to
+3. **Rollback restores previous state** — disturbance/stability are recovered from commit/execution history
+4. **Post-execution audit is rollback-aware** — both revision execution and rollback invariants tolerate subsequent rollbacks
+5. **Bridge records commit events** — `_ensure_routing_policy_candidate()` creates a commit event so rollback can find initial state
+
+### Validation
+
+- 95 tests passing (12 rollback + 11 bridge + 3 e2e + 6 execution + 28 dynamics + 6 confidence + 29 smoke)
+- End-to-end flow verified: Router decisions → escalation rate → LSG proposal → approval → execution → policy change → rollback → policy revert
+
+### Status
+
+LSG now has TWO state mutation mechanisms:
+1. **Revision execution**: version increments, sets new disturbance/stability
+2. **Rollback**: version decrements, restores previous disturbance/stability
+
+Both require LSG approval. Both are fully auditable. Both are integrated with Router-LSG Bridge.
+
+---
+
+## 2026-04-24 Router-LSG Bridge: Three-System Integration
+
+**Type**: Integration module connecting Capability Router + TopoMem OBD + LSG governance
+
+**Goal**: Connect per-task routing decisions and batch-level drift signals to LSG governance as revision proposals, enabling policy changes only through LSG-approved execution.
+
+### New Files
+
+- `core/router_lsg_bridge.py`
+  - `RouterDecision`: frozen dataclass for per-task routing events (task_id, decision_path, monitor_signal, confidence, verified, escalated, revised)
+  - `DriftSignal`: frozen dataclass for batch-level drift events (status, centroid_drift, window_size, task_count_in_window)
+  - `RoutingPolicyState`: mutable policy state (escalation_threshold, verify_threshold, conservative_mode, drift_latch, version)
+  - `RouterLSGBridge`: main bridge class with three entry points:
+    - `record_decision()` → aggregates escalation rate → proposes conservative_mode if threshold exceeded
+    - `record_drift_signal()` → detects domain_shift/gradual_drift → proposes drift_latch
+    - `approve_and_execute_proposal()` → approves + drafts + executes revision through LSG
+- `tests/test_router_lsg_bridge.py`
+  - 9 tests covering: low/high escalation rate, conservative mode dedup, drift signal proposals, drift latch dedup, approve+execute escalation, approve+execute drift, unapproved proposal no change
+
+### Key Design Decisions
+
+1. **Deduplication**: Bridge checks both `has_pending` (unexecuted proposals in revision_log) AND `policy.conservative_mode`/`policy.drift_latch` to prevent duplicate proposals
+2. **Policy state as LSG candidate**: `routing_policy` is stored as a CandidateState in LSG, enabling version-tracked policy changes
+3. **Three-system flow**:
+   - Capability Router → per-task decisions → escalation rate → revision proposal
+   - TopoMem OBD → batch drift → revision proposal
+   - LSG → approval → execution → policy version increment
+
+### Validation
+
+- `python tests\test_router_lsg_bridge.py` passed (9/9)
+- `python tests\test_rewrite_execution.py` passed (6/6)
+- `python tests\test_rewrite_dynamics.py` passed
+- `python tests\smoke_test.py` passed
+- Total: 55 tests passing
+
+### Status
+
+Three-system integration is now structurally complete:
+- Capability Router makes per-task accept/verify/escalate decisions
+- Bridge aggregates decisions into policy-relevant signals
+- LSG governs whether proposals are approved and executed
+- Policy changes only happen through LSG-controlled version increment
+
+### Remaining Useful Work
+
+- define rollback as a separate event family (not version increment)
+- end-to-end integration test with real routing experiment
+- stress test: mixed fuzz with execution events in LSG
+
+---

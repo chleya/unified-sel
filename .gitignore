@@ -4,6 +4,26 @@ topomem/data/models/xet/
 
 # GGUF model files — download from source instead
 topomem/data/models/*.gguf
+double_helix/*.gguf
+*.gguf
+
+# Experiment results — generated dynamically, do not commit
+results/
+double_helix/results/
+*/results/
+
+# Database and vector store files
+topomem/data/chromadb/
+*.sqlite
+*.db
+*.sqlite3
+
+# Weight/topology analysis caches
+weight_graph/cache_*.pkl
+*.pkl
+
+# Externalized artifacts — large model files and caches moved out of git tracking
+artifacts/
 
 # Python
 __pycache__/
@@ -23,3 +43,7 @@ Thumbs.db
 *.tmp
 *.log
 F:/tmp/
+tmp_*/
+topomem/tmp/
+topomem/tmp_*/
+topomem/__test_*_tmp/

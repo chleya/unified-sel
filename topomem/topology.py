@@ -419,6 +419,7 @@ class TopologyEngine:
         diagram: PersistenceDiagram,
         points: np.ndarray,
         threshold: Optional[float] = None,
+        max_clusters: Optional[int] = None,
     ) -> np.ndarray:
         """从 H0 持久分支推导聚类标签。
 
@@ -428,19 +429,19 @@ class TopologyEngine:
             diagram: compute_persistence 的输出
             points: 原始点云 (N, D)
             threshold: 切割阈值（None 则自动选择）
+            max_clusters: 目标最大簇数（用于控制微簇问题）
 
         返回：
             np.ndarray, shape (N,)，每个点的簇标签（从 0 开始）
         """
         from scipy.cluster.hierarchy import fcluster, linkage
-        from scipy.spatial.distance import squareform
+        from scipy.spatial.distance import pdist
 
         n_points = len(points)
         if n_points < 2:
             return np.array([0])
 
         # 计算距离矩阵
-        from scipy.spatial.distance import pdist
         distances = pdist(points, metric=self.metric)
 
         # Single-linkage 层次聚类
@@ -453,13 +454,262 @@ class TopologyEngine:
         # 切割树得到簇标签
         labels = fcluster(Z, t=threshold, criterion="distance")
 
+        # 如果簇数过多，尝试用 max_clusters 限制
+        if max_clusters is not None:
+            n_current = len(np.unique(labels))
+            if n_current > max_clusters:
+                # 用 max_clusters 作为切割阈值（基于层次聚类的"深度"）
+                # fcluster 支持 k 模式：用簇数切割
+                labels = fcluster(Z, t=max_clusters, criterion="maxclust")
+
         # 重新编号为从 0 开始
         unique_labels = np.unique(labels)
         label_map = {old: new for new, old in enumerate(unique_labels)}
         return np.array([label_map[l] for l in labels])
 
+    def cluster_labels_from_dbscan(
+        self,
+        points: np.ndarray,
+        eps: Optional[float] = None,
+        min_samples: int = 3,
+        auto_eps_percentile: float = 90,
+        skip_umap: bool = False,
+    ) -> np.ndarray:
+        """DBSCAN 密度聚类（使用余弦距离）。
+
+        相比 single-linkage H0，DBSCAN 的优势：
+        1. 密度感知：只在高密度区域形成簇，噪声点标记为 -1
+        2. 自动簇数：无需预设 k，由数据分布决定
+        3. 对高维稀疏数据更鲁棒
+
+        参数：
+            points: shape (N, D)，归一化后的 embedding
+            eps: 余弦距离阈值（None 则自动估计）
+            min_samples: 形成簇的最少邻居数
+            auto_eps_percentile: 自动估计 eps 时使用的分位数
+
+        返回：
+            np.ndarray, shape (N,)
+            簇标签：0, 1, 2, ... （-1 = 噪声点）
+        """
+        from sklearn.cluster import DBSCAN
+        from sklearn.neighbors import NearestNeighbors
+
+        n_points = len(points)
+        if n_points < 2:
+            return np.array([0])
+
+        # P0 修复：如果启用 UMAP，先降维到低维空间
+        # 验证：384D ARI=0.000，UMAP(2D) ARI=0.945
+        # 但如果已经是低维（<=10D），就不再降维
+        # skip_umap=True 当调用者已经做过 UMAP 降维时使用
+        points_for_clustering = points
+        if not skip_umap and getattr(self.config, 'use_umap_before_clustering', False) and points.shape[1] > 10:
+            points_for_clustering = self._umap_reduce(points)
+            logger.debug(f"UMAP: {points.shape[1]}D → {points_for_clustering.shape[1]}D")
+
+        # 自动估计 eps（使用降维后的点云）
+        if eps is None:
+            eps = self._estimate_dbscan_eps(points_for_clustering, min_samples)
+
+        # 计算距离矩阵
+        # P0 修复：UMAP 降维后使用 Euclidean 距离（DBSCAN 在欧氏空间更稳定）
+        # 原因：UMAP 已经用 cosine 相似度构建了邻域结构，降维后的欧氏距离
+        #       能更好地反映点之间的聚类关系
+        is_umap_reduced = points_for_clustering.shape[1] <= 10
+        if is_umap_reduced:
+            # UMAP 降维后用 Euclidean 距离
+            from scipy.spatial.distance import pdist, squareform
+            dists = pdist(points_for_clustering, metric="euclidean")
+            distances = squareform(dists)
+        elif self.metric == "cosine":
+            cos_sim = points_for_clustering @ points_for_clustering.T
+            np.fill_diagonal(cos_sim, 1.0)
+            distances = np.clip(1 - cos_sim, 0.0, 2.0)
+        else:
+            from scipy.spatial.distance import pdist, squareform
+            dists = pdist(points_for_clustering, metric=self.metric)
+            distances = squareform(dists)
+
+        # DBSCAN 聚类
+        clustering = DBSCAN(
+            eps=eps,
+            min_samples=min_samples,
+            metric="precomputed",
+        )
+        labels = clustering.fit_predict(distances)
+
+        # 如果 DBSCAN 返回太多噪声，调整参数重试
+        noise_ratio = np.sum(labels == -1) / len(labels)
+        if noise_ratio > 0.5 and n_points > 10:
+            logger.warning(
+                f"DBSCAN: {noise_ratio:.0%} noise, retrying with eps={eps*0.7:.3f}"
+            )
+            labels = DBSCAN(
+                eps=eps * 0.7,
+                min_samples=max(2, min_samples - 1),
+                metric="precomputed",
+            ).fit_predict(distances)
+
+        return labels
+
+    def cluster_labels_hybrid(
+        self,
+        points: np.ndarray,
+        diagram: Optional[PersistenceDiagram] = None,
+        dbscan_eps: Optional[float] = None,
+        dbscan_min_samples: int = 3,
+    ) -> np.ndarray:
+        """混合聚类：DBSCAN 预聚类 + TDA H0 细化。
+
+        工作流程：
+        1. 先用 DBSCAN 做密度聚类，得到粗粒度簇
+        2. 对每个 DBSCAN 簇内，用 H0 持久性进一步细分
+        3. 噪声点分配给最近的簇
+
+        这解决了：
+        - H0 在高维空间的单点簇问题
+        - DBSCAN 无法识别拓扑结构的问题
+
+        参数：
+            points: shape (N, D) 点云
+            diagram: 可选的持久图（如果已计算）
+            dbscan_eps: DBSCAN 半径（None 则自动估计）
+            dbscan_min_samples: DBSCAN 最小样本
+
+        返回：
+            np.ndarray, shape (N,)，簇标签
+        """
+        n_points = len(points)
+        if n_points < 2:
+            return np.array([0])
+
+        # P0 修复：如果启用 UMAP，先降维到低维空间（如果还不是低维）
+        points_for_clustering = points
+        if getattr(self.config, 'use_umap_before_clustering', False) and points.shape[1] > 10:
+            points_for_clustering = self._umap_reduce(points)
+            logger.debug(f"UMAP hybrid: {points.shape[1]}D → {points_for_clustering.shape[1]}D")
+
+        # Step 1: DBSCAN 预聚类（skip_umap=True 因为上面已经做过 UMAP）
+        dbscan_labels = self.cluster_labels_from_dbscan(
+            points_for_clustering, eps=dbscan_eps, min_samples=dbscan_min_samples, skip_umap=True
+        )
+
+        unique_dbscan_clusters = set(dbscan_labels)
+        unique_dbscan_clusters.discard(-1)  # 移除噪声
+
+        n_dbscan_clusters = len(unique_dbscan_clusters)
+
+        # 如果 DBSCAN 只找到 0-1 个簇，fallback 到 H0
+        if n_dbscan_clusters <= 1:
+            if diagram is not None:
+                return self.cluster_labels_from_h0(diagram, points)
+            else:
+                # 没有 diagram，返回 DBSCAN 结果
+                labels = dbscan_labels.copy()
+                noise_mask = labels == -1
+                if noise_mask.any():
+                    max_label = labels.max() if len(labels) > 0 else 0
+                    noise_count = noise_mask.sum()
+                    labels[noise_mask] = np.arange(max_label + 1, max_label + 1 + noise_count)
+                return labels
+
+        # Step 2: 对每个 DBSCAN 簇，计算内部 H0 持久性
+        final_labels = np.full(n_points, -1, dtype=int)
+        next_cluster_id = 0
+
+        for cluster_id in unique_dbscan_clusters:
+            cluster_mask = dbscan_labels == cluster_id
+            cluster_points = points[cluster_mask]
+            cluster_indices = np.where(cluster_mask)[0]
+
+            if len(cluster_points) < 2:
+                final_labels[cluster_indices[0]] = next_cluster_id
+                next_cluster_id += 1
+                continue
+
+            # 在簇内计算 PH
+            try:
+                sub_diagram = self.compute_persistence(cluster_points)
+                sub_labels = self.cluster_labels_from_h0(sub_diagram, cluster_points)
+
+                # 将子簇标签映射到全局标签
+                unique_sub_labels = np.unique(sub_labels)
+                for sub_label in unique_sub_labels:
+                    sub_mask = sub_labels == sub_label
+                    final_labels[cluster_indices[sub_mask]] = next_cluster_id
+                    next_cluster_id += 1
+            except Exception as e:
+                logger.warning(f"PH failed for cluster {cluster_id}: {e}")
+                final_labels[cluster_indices] = next_cluster_id
+                next_cluster_id += 1
+
+        # Step 3: 处理噪声点 - 分配给最近的簇
+        noise_mask = final_labels == -1
+        if noise_mask.any():
+            noise_indices = np.where(noise_mask)[0]
+            noise_points = points[noise_mask]
+
+            if next_cluster_id > 0:
+                cluster_centers = np.array([
+                    points[final_labels == cid].mean(axis=0)
+                    for cid in range(next_cluster_id)
+                ])
+
+                from sklearn.neighbors import NearestNeighbors
+                nn = NearestNeighbors(n_neighbors=1, metric="cosine")
+                nn.fit(cluster_centers)
+                _, nearest = nn.kneighbors(noise_points)
+                final_labels[noise_indices] = nearest.flatten()
+            else:
+                final_labels[noise_indices] = 0
+
+        return final_labels
+
+    def _estimate_dbscan_eps(
+        self,
+        points: np.ndarray,
+        min_samples: int,
+    ) -> float:
+        """自动估计 DBSCAN 的 eps 参数。
+
+        方法：k-distance 图的 90 分位数
+
+        注意：UMAP 降维后的低维点使用 Euclidean 距离，
+        因为 UMAP 已经用 cosine 相似度构建了邻域结构。
+        """
+        from sklearn.neighbors import NearestNeighbors
+
+        n_points = len(points)
+        if n_points < min_samples:
+            return 0.5  # 默认值
+
+        # P0 修复：UMAP 降维后的低维点用 Euclidean 距离
+        # 判断依据：维度 <= 10 认为是 UMAP 降维后的点
+        use_metric = "euclidean" if points.shape[1] <= 10 else self.metric
+
+        # 计算 k 近邻距离
+        nn = NearestNeighbors(n_neighbors=min_samples, metric=use_metric)
+        nn.fit(points)
+        distances, _ = nn.kneighbors(points)
+
+        # 取第 k 近邻距离
+        k_distances = np.sort(distances[:, -1])
+
+        # 用 90 分位数
+        eps = float(np.percentile(k_distances, 90))
+
+        # 确保 eps 合理（低维空间通常需要更小的 eps）
+        if points.shape[1] <= 10:
+            return max(min(eps, 2.0), 0.1)
+        return max(min(eps, 1.5), 0.05)
+
     def _auto_cluster_threshold(self, diagram: PersistenceDiagram) -> float:
-        """从 H0 persistence 的 gap 自动选择切割阈值。"""
+        """从 H0 persistence 的 gap 自动选择切割阈值。
+
+        改进版本：对 cosine metric 做了特殊处理。
+        cosine distance 在 [0, 2] 范围，0=相同，2=正交。
+        """
         h0 = diagram[0]
         if len(h0) < 2:
             return 0.5  # 默认阈值
@@ -480,7 +730,124 @@ class TopologyEngine:
             idx = np.argmax(gaps)
             return float((deaths[idx] + deaths[idx + 1]) / 2)
 
+        # 如果 gap 策略失败，用百分位数
+        # 对于 cosine，0.5-0.7 通常是合理的簇阈值
+        if self.metric == "cosine":
+            # 40th percentile 作为阈值（产生较少、较大的簇）
+            return float(np.percentile(deaths, 40))
+
         return float(np.median(deaths))
+
+    def estimate_n_clusters(self, points: np.ndarray, target_ratio: float = 0.1) -> int:
+        """基于数据分布自动估计最佳簇数。
+
+        方法：使用 K-NN 距离的统计量估算
+
+        Args:
+            points: shape (N, D)
+            target_ratio: 期望的簇大小比例（默认 10% 的点 = 一个簇）
+
+        Returns:
+            估计的簇数
+        """
+        from scipy.spatial.distance import pdist
+
+        n = len(points)
+        if n < 10:
+            return 2
+
+        # 计算成对距离的样本
+        if n > 500:
+            # 采样以加速
+            rng = np.random.RandomState(42)
+            indices = rng.choice(n, size=500, replace=False)
+            sample = points[indices]
+        else:
+            sample = points
+
+        distances = pdist(sample, metric=self.metric)
+
+        # 使用距离分布的统计量估算
+        mean_dist = np.mean(distances)
+        std_dist = np.std(distances)
+
+        # 简单启发式：mean + 0.5*std 以上的距离对被认为是"簇间"
+        # 统计这样的点对比例，推算簇数
+        threshold = mean_dist + 0.3 * std_dist
+
+        if self.metric == "cosine":
+            # Cosine distance: 0=相同, 2=正交
+            # 阈值 0.5-0.7 对于语义相似文本是合理的
+            if threshold < 0.4:
+                threshold = 0.5
+            elif threshold > 1.0:
+                threshold = 0.7
+
+        # 估计簇数
+        n_clusters = max(2, min(int(n * target_ratio), n // 2))
+        return n_clusters
+
+    # ------------------------------------------------------------------
+    # UMAP 降维辅助（P0 修复：高维空间聚类失效问题）
+    # ------------------------------------------------------------------
+
+    def _umap_reduce(self, points: np.ndarray) -> np.ndarray:
+        """使用 UMAP 将高维点云降到低维，用于聚类前处理。
+
+        关键发现：384D 空间 DBSCAN ARI=0.000，UMAP(2D)+DBSCAN ARI=0.945
+        UMAP 保留了足够的几何结构用于拓扑聚类，同时解决了维度灾难。
+
+        参数：
+            points: shape (N, D) 原始高维 embedding
+
+        返回：
+            shape (N, umap_n_components) 降维后的点云
+
+        异常：
+            RuntimeError: 如果 UMAP 不可用或降维失败
+        """
+        try:
+            import umap
+        except ImportError:
+            raise RuntimeError(
+                "UMAP is required for use_umap_before_clustering=True but is not installed. "
+                "Install with: pip install umap-learn"
+            )
+
+        n = len(points)
+        n_components = getattr(self.config, 'umap_n_components', 2)
+        n_neighbors = getattr(self.config, 'umap_n_neighbors', 15)
+        min_dist = getattr(self.config, 'umap_min_dist', 0.1)
+
+        # 验证：n_components 必须小于原始维度
+        if n_components >= points.shape[1]:
+            logger.warning(
+                f"UMAP: n_components={n_components} >= original dim={points.shape[1]}, "
+                f"skipping reduction"
+            )
+            return points
+
+        # UMAP 参数调整：小数据集需要更小的 n_neighbors
+        actual_neighbors = min(n_neighbors, n - 1)
+        if actual_neighbors < 2:
+            # 数据太少无法降维
+            logger.warning(f"UMAP: too few points ({n}), skipping reduction")
+            return points
+
+        try:
+            reducer = umap.UMAP(
+                n_neighbors=actual_neighbors,
+                min_dist=min_dist,
+                n_components=n_components,
+                metric='cosine',
+                random_state=42,
+            )
+            reduced = reducer.fit_transform(points)
+            logger.debug(f"UMAP: {points.shape[1]}D → {reduced.shape[1]}D")
+            return np.asarray(reduced, dtype=np.float64)
+        except Exception as e:
+            logger.error(f"UMAP reduction failed: {e}, clustering will use original high-D points")
+            raise RuntimeError(f"UMAP reduction failed: {e}") from e
 
     # ------------------------------------------------------------------
     # 完整结果: compute_full_result（便捷方法）
@@ -489,11 +856,13 @@ class TopologyEngine:
     def compute_full_result(
         self,
         points: np.ndarray,
+        max_clusters: Optional[int] = None,
     ) -> TopologyResult:
         """一次性计算所有拓扑特征，返回富结果。
 
         参数：
             points: shape (N, D)
+            max_clusters: 目标最大簇数（用于控制 H0 微簇问题）
 
         返回：
             TopologyResult
@@ -501,7 +870,7 @@ class TopologyEngine:
         diagram = self.compute_persistence(points)
         features = self.extract_persistent_features(diagram)
         fingerprint = self.topological_summary(diagram)
-        cluster_labels = self.cluster_labels_from_h0(diagram, points)
+        cluster_labels = self.cluster_labels_from_h0(diagram, points, max_clusters=max_clusters)
         n_clusters = len(np.unique(cluster_labels))
 
         return TopologyResult(

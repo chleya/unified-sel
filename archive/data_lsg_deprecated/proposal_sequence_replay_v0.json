@@ -1,0 +1,669 @@
+[
+  {
+    "case_id": "late_gate_commit_once",
+    "candidate_id": "c_late_gate",
+    "expected_committed": true,
+    "expected_commit_count": 1,
+    "expected_final_phase": "acknowledged",
+    "steps": [
+      {
+        "proposal_origin": "sequence_fixture",
+        "model_json": {
+          "proposal_id": "p_late_gate_1",
+          "candidate_id": "c_late_gate",
+          "candidate_summary": "candidate pressure rises but evidence gate is closed",
+          "proxy": {
+            "u1_conflict": 0.9,
+            "u2_mismatch": 0.8,
+            "n1_goal_loss_if_ignored": 0.9,
+            "n2_commitment_carry_cost": 0.8,
+            "a1_institutional_level": 0.2,
+            "a2_current_anchor_strength": 0.2,
+            "p1_dependency_fanout": 0.2,
+            "p2_rollback_cost": 0.2
+          }
+        },
+        "explicit": {
+          "a1_institutional_level": 0.2,
+          "a2_current_anchor_strength": 0.2,
+          "p1_dependency_fanout": 0.2,
+          "p2_rollback_cost": 0.2,
+          "evidence_open": false,
+          "constitution_open": true,
+          "log_ready": true
+        }
+      },
+      {
+        "proposal_origin": "sequence_fixture",
+        "model_json": {
+          "proposal_id": "p_late_gate_2",
+          "candidate_id": "c_late_gate",
+          "candidate_summary": "same candidate now has evidence",
+          "proxy": {
+            "u1_conflict": 0.9,
+            "u2_mismatch": 0.8,
+            "n1_goal_loss_if_ignored": 0.9,
+            "n2_commitment_carry_cost": 0.8,
+            "a1_institutional_level": 0.2,
+            "a2_current_anchor_strength": 0.2,
+            "p1_dependency_fanout": 0.2,
+            "p2_rollback_cost": 0.2
+          }
+        },
+        "explicit": {
+          "a1_institutional_level": 0.2,
+          "a2_current_anchor_strength": 0.2,
+          "p1_dependency_fanout": 0.2,
+          "p2_rollback_cost": 0.2,
+          "evidence_open": true,
+          "constitution_open": true,
+          "log_ready": true
+        }
+      },
+      {
+        "proposal_origin": "sequence_fixture",
+        "model_json": {
+          "proposal_id": "p_late_gate_3",
+          "candidate_id": "c_late_gate",
+          "candidate_summary": "duplicate pressure after acknowledgement",
+          "proxy": {
+            "u1_conflict": 0.95,
+            "u2_mismatch": 0.95,
+            "n1_goal_loss_if_ignored": 0.95,
+            "n2_commitment_carry_cost": 0.95,
+            "a1_institutional_level": 0.1,
+            "a2_current_anchor_strength": 0.1,
+            "p1_dependency_fanout": 0.1,
+            "p2_rollback_cost": 0.1
+          }
+        },
+        "explicit": {
+          "a1_institutional_level": 0.1,
+          "a2_current_anchor_strength": 0.1,
+          "p1_dependency_fanout": 0.1,
+          "p2_rollback_cost": 0.1,
+          "evidence_open": true,
+          "constitution_open": true,
+          "log_ready": true
+        }
+      }
+    ]
+  },
+  {
+    "case_id": "acknowledged_absorbs_later_low_pressure",
+    "candidate_id": "c_absorb",
+    "expected_committed": true,
+    "expected_commit_count": 1,
+    "expected_final_phase": "acknowledged",
+    "steps": [
+      {
+        "proposal_origin": "sequence_fixture",
+        "model_json": {
+          "proposal_id": "p_absorb_1",
+          "candidate_id": "c_absorb",
+          "candidate_summary": "candidate commits immediately",
+          "proxy": {
+            "u1_conflict": 0.95,
+            "u2_mismatch": 0.95,
+            "n1_goal_loss_if_ignored": 0.95,
+            "n2_commitment_carry_cost": 0.95,
+            "a1_institutional_level": 0.1,
+            "a2_current_anchor_strength": 0.1,
+            "p1_dependency_fanout": 0.1,
+            "p2_rollback_cost": 0.1
+          }
+        },
+        "explicit": {
+          "a1_institutional_level": 0.1,
+          "a2_current_anchor_strength": 0.1,
+          "p1_dependency_fanout": 0.1,
+          "p2_rollback_cost": 0.1,
+          "evidence_open": true,
+          "constitution_open": true,
+          "log_ready": true
+        }
+      },
+      {
+        "proposal_origin": "sequence_fixture",
+        "model_json": {
+          "proposal_id": "p_absorb_2",
+          "candidate_id": "c_absorb",
+          "candidate_summary": "later low pressure should not uncommit",
+          "proxy": {
+            "u1_conflict": 0.05,
+            "u2_mismatch": 0.05,
+            "n1_goal_loss_if_ignored": 0.05,
+            "n2_commitment_carry_cost": 0.05,
+            "a1_institutional_level": 0.9,
+            "a2_current_anchor_strength": 0.9,
+            "p1_dependency_fanout": 0.9,
+            "p2_rollback_cost": 0.9
+          }
+        },
+        "explicit": {
+          "a1_institutional_level": 0.9,
+          "a2_current_anchor_strength": 0.9,
+          "p1_dependency_fanout": 0.9,
+          "p2_rollback_cost": 0.9,
+          "evidence_open": false,
+          "constitution_open": false,
+          "log_ready": false
+        }
+      }
+    ]
+  },
+  {
+    "case_id": "multi_candidate_bandwidth_top3",
+    "candidate_id": "c_bw_0",
+    "expected_committed": true,
+    "expected_commit_count": 3,
+    "expected_final_phase": "acknowledged",
+    "steps": [
+      {
+        "observations": [
+          {
+            "proposal_origin": "sequence_fixture",
+            "model_json": {
+              "proposal_id": "p_bw_0",
+              "candidate_id": "c_bw_0",
+              "candidate_summary": "top priority candidate",
+              "proxy": {
+                "u1_conflict": 0.95,
+                "u2_mismatch": 0.95,
+                "n1_goal_loss_if_ignored": 0.95,
+                "n2_commitment_carry_cost": 0.95,
+                "a1_institutional_level": 0.1,
+                "a2_current_anchor_strength": 0.1,
+                "p1_dependency_fanout": 0.1,
+                "p2_rollback_cost": 0.1
+              }
+            },
+            "explicit": {
+              "a1_institutional_level": 0.1,
+              "a2_current_anchor_strength": 0.1,
+              "p1_dependency_fanout": 0.1,
+              "p2_rollback_cost": 0.1,
+              "evidence_open": true,
+              "constitution_open": true,
+              "log_ready": true
+            }
+          },
+          {
+            "proposal_origin": "sequence_fixture",
+            "model_json": {
+              "proposal_id": "p_bw_1",
+              "candidate_id": "c_bw_1",
+              "candidate_summary": "second priority candidate",
+              "proxy": {
+                "u1_conflict": 0.9,
+                "u2_mismatch": 0.9,
+                "n1_goal_loss_if_ignored": 0.9,
+                "n2_commitment_carry_cost": 0.9,
+                "a1_institutional_level": 0.1,
+                "a2_current_anchor_strength": 0.1,
+                "p1_dependency_fanout": 0.1,
+                "p2_rollback_cost": 0.1
+              }
+            },
+            "explicit": {
+              "a1_institutional_level": 0.1,
+              "a2_current_anchor_strength": 0.1,
+              "p1_dependency_fanout": 0.1,
+              "p2_rollback_cost": 0.1,
+              "evidence_open": true,
+              "constitution_open": true,
+              "log_ready": true
+            }
+          },
+          {
+            "proposal_origin": "sequence_fixture",
+            "model_json": {
+              "proposal_id": "p_bw_2",
+              "candidate_id": "c_bw_2",
+              "candidate_summary": "third priority candidate",
+              "proxy": {
+                "u1_conflict": 0.85,
+                "u2_mismatch": 0.85,
+                "n1_goal_loss_if_ignored": 0.85,
+                "n2_commitment_carry_cost": 0.85,
+                "a1_institutional_level": 0.1,
+                "a2_current_anchor_strength": 0.1,
+                "p1_dependency_fanout": 0.1,
+                "p2_rollback_cost": 0.1
+              }
+            },
+            "explicit": {
+              "a1_institutional_level": 0.1,
+              "a2_current_anchor_strength": 0.1,
+              "p1_dependency_fanout": 0.1,
+              "p2_rollback_cost": 0.1,
+              "evidence_open": true,
+              "constitution_open": true,
+              "log_ready": true
+            }
+          },
+          {
+            "proposal_origin": "sequence_fixture",
+            "model_json": {
+              "proposal_id": "p_bw_3",
+              "candidate_id": "c_bw_3",
+              "candidate_summary": "fourth candidate over bandwidth",
+              "proxy": {
+                "u1_conflict": 0.8,
+                "u2_mismatch": 0.8,
+                "n1_goal_loss_if_ignored": 0.8,
+                "n2_commitment_carry_cost": 0.8,
+                "a1_institutional_level": 0.1,
+                "a2_current_anchor_strength": 0.1,
+                "p1_dependency_fanout": 0.1,
+                "p2_rollback_cost": 0.1
+              }
+            },
+            "explicit": {
+              "a1_institutional_level": 0.1,
+              "a2_current_anchor_strength": 0.1,
+              "p1_dependency_fanout": 0.1,
+              "p2_rollback_cost": 0.1,
+              "evidence_open": true,
+              "constitution_open": true,
+              "log_ready": true
+            }
+          },
+          {
+            "proposal_origin": "sequence_fixture",
+            "model_json": {
+              "proposal_id": "p_bw_4",
+              "candidate_id": "c_bw_4",
+              "candidate_summary": "fifth candidate over bandwidth",
+              "proxy": {
+                "u1_conflict": 0.75,
+                "u2_mismatch": 0.75,
+                "n1_goal_loss_if_ignored": 0.75,
+                "n2_commitment_carry_cost": 0.75,
+                "a1_institutional_level": 0.1,
+                "a2_current_anchor_strength": 0.1,
+                "p1_dependency_fanout": 0.1,
+                "p2_rollback_cost": 0.1
+              }
+            },
+            "explicit": {
+              "a1_institutional_level": 0.1,
+              "a2_current_anchor_strength": 0.1,
+              "p1_dependency_fanout": 0.1,
+              "p2_rollback_cost": 0.1,
+              "evidence_open": true,
+              "constitution_open": true,
+              "log_ready": true
+            }
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "case_id": "multi_step_refill_after_top3_commit",
+    "candidate_id": "c_refill_4",
+    "expected_committed": true,
+    "expected_commit_count": 5,
+    "expected_final_phase": "acknowledged",
+    "steps": [
+      {
+        "observations": [
+          {
+            "proposal_origin": "sequence_fixture",
+            "model_json": {
+              "proposal_id": "p_refill_0a",
+              "candidate_id": "c_refill_0",
+              "candidate_summary": "top refill candidate",
+              "proxy": {
+                "u1_conflict": 0.95,
+                "u2_mismatch": 0.95,
+                "n1_goal_loss_if_ignored": 0.95,
+                "n2_commitment_carry_cost": 0.95,
+                "a1_institutional_level": 0.1,
+                "a2_current_anchor_strength": 0.1,
+                "p1_dependency_fanout": 0.1,
+                "p2_rollback_cost": 0.1
+              }
+            },
+            "explicit": {
+              "a1_institutional_level": 0.1,
+              "a2_current_anchor_strength": 0.1,
+              "p1_dependency_fanout": 0.1,
+              "p2_rollback_cost": 0.1,
+              "evidence_open": true,
+              "constitution_open": true,
+              "log_ready": true
+            }
+          },
+          {
+            "proposal_origin": "sequence_fixture",
+            "model_json": {
+              "proposal_id": "p_refill_1a",
+              "candidate_id": "c_refill_1",
+              "candidate_summary": "second refill candidate",
+              "proxy": {
+                "u1_conflict": 0.9,
+                "u2_mismatch": 0.9,
+                "n1_goal_loss_if_ignored": 0.9,
+                "n2_commitment_carry_cost": 0.9,
+                "a1_institutional_level": 0.1,
+                "a2_current_anchor_strength": 0.1,
+                "p1_dependency_fanout": 0.1,
+                "p2_rollback_cost": 0.1
+              }
+            },
+            "explicit": {
+              "a1_institutional_level": 0.1,
+              "a2_current_anchor_strength": 0.1,
+              "p1_dependency_fanout": 0.1,
+              "p2_rollback_cost": 0.1,
+              "evidence_open": true,
+              "constitution_open": true,
+              "log_ready": true
+            }
+          },
+          {
+            "proposal_origin": "sequence_fixture",
+            "model_json": {
+              "proposal_id": "p_refill_2a",
+              "candidate_id": "c_refill_2",
+              "candidate_summary": "third refill candidate",
+              "proxy": {
+                "u1_conflict": 0.85,
+                "u2_mismatch": 0.85,
+                "n1_goal_loss_if_ignored": 0.85,
+                "n2_commitment_carry_cost": 0.85,
+                "a1_institutional_level": 0.1,
+                "a2_current_anchor_strength": 0.1,
+                "p1_dependency_fanout": 0.1,
+                "p2_rollback_cost": 0.1
+              }
+            },
+            "explicit": {
+              "a1_institutional_level": 0.1,
+              "a2_current_anchor_strength": 0.1,
+              "p1_dependency_fanout": 0.1,
+              "p2_rollback_cost": 0.1,
+              "evidence_open": true,
+              "constitution_open": true,
+              "log_ready": true
+            }
+          },
+          {
+            "proposal_origin": "sequence_fixture",
+            "model_json": {
+              "proposal_id": "p_refill_3a",
+              "candidate_id": "c_refill_3",
+              "candidate_summary": "fourth refill candidate over first-step bandwidth",
+              "proxy": {
+                "u1_conflict": 0.8,
+                "u2_mismatch": 0.8,
+                "n1_goal_loss_if_ignored": 0.8,
+                "n2_commitment_carry_cost": 0.8,
+                "a1_institutional_level": 0.1,
+                "a2_current_anchor_strength": 0.1,
+                "p1_dependency_fanout": 0.1,
+                "p2_rollback_cost": 0.1
+              }
+            },
+            "explicit": {
+              "a1_institutional_level": 0.1,
+              "a2_current_anchor_strength": 0.1,
+              "p1_dependency_fanout": 0.1,
+              "p2_rollback_cost": 0.1,
+              "evidence_open": true,
+              "constitution_open": true,
+              "log_ready": true
+            }
+          },
+          {
+            "proposal_origin": "sequence_fixture",
+            "model_json": {
+              "proposal_id": "p_refill_4a",
+              "candidate_id": "c_refill_4",
+              "candidate_summary": "fifth refill candidate over first-step bandwidth",
+              "proxy": {
+                "u1_conflict": 0.75,
+                "u2_mismatch": 0.75,
+                "n1_goal_loss_if_ignored": 0.75,
+                "n2_commitment_carry_cost": 0.75,
+                "a1_institutional_level": 0.1,
+                "a2_current_anchor_strength": 0.1,
+                "p1_dependency_fanout": 0.1,
+                "p2_rollback_cost": 0.1
+              }
+            },
+            "explicit": {
+              "a1_institutional_level": 0.1,
+              "a2_current_anchor_strength": 0.1,
+              "p1_dependency_fanout": 0.1,
+              "p2_rollback_cost": 0.1,
+              "evidence_open": true,
+              "constitution_open": true,
+              "log_ready": true
+            }
+          }
+        ]
+      },
+      {
+        "observations": [
+          {
+            "proposal_origin": "sequence_fixture",
+            "model_json": {
+              "proposal_id": "p_refill_3b",
+              "candidate_id": "c_refill_3",
+              "candidate_summary": "fourth candidate returns next step and can commit",
+              "proxy": {
+                "u1_conflict": 0.8,
+                "u2_mismatch": 0.8,
+                "n1_goal_loss_if_ignored": 0.8,
+                "n2_commitment_carry_cost": 0.8,
+                "a1_institutional_level": 0.1,
+                "a2_current_anchor_strength": 0.1,
+                "p1_dependency_fanout": 0.1,
+                "p2_rollback_cost": 0.1
+              }
+            },
+            "explicit": {
+              "a1_institutional_level": 0.1,
+              "a2_current_anchor_strength": 0.1,
+              "p1_dependency_fanout": 0.1,
+              "p2_rollback_cost": 0.1,
+              "evidence_open": true,
+              "constitution_open": true,
+              "log_ready": true
+            }
+          },
+          {
+            "proposal_origin": "sequence_fixture",
+            "model_json": {
+              "proposal_id": "p_refill_4b",
+              "candidate_id": "c_refill_4",
+              "candidate_summary": "fifth candidate returns next step and can commit",
+              "proxy": {
+                "u1_conflict": 0.75,
+                "u2_mismatch": 0.75,
+                "n1_goal_loss_if_ignored": 0.75,
+                "n2_commitment_carry_cost": 0.75,
+                "a1_institutional_level": 0.1,
+                "a2_current_anchor_strength": 0.1,
+                "p1_dependency_fanout": 0.1,
+                "p2_rollback_cost": 0.1
+              }
+            },
+            "explicit": {
+              "a1_institutional_level": 0.1,
+              "a2_current_anchor_strength": 0.1,
+              "p1_dependency_fanout": 0.1,
+              "p2_rollback_cost": 0.1,
+              "evidence_open": true,
+              "constitution_open": true,
+              "log_ready": true
+            }
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "case_id": "revision_request_after_acknowledgement_audit_only",
+    "candidate_id": "c_revision_anchor",
+    "expected_committed": true,
+    "expected_commit_count": 1,
+    "expected_revision_count": 1,
+    "expected_final_phase": "acknowledged",
+    "steps": [
+      {
+        "proposal_origin": "sequence_fixture",
+        "model_json": {
+          "proposal_id": "p_revision_anchor_1",
+          "candidate_id": "c_revision_anchor",
+          "candidate_summary": "candidate is acknowledged before revision request",
+          "proxy": {
+            "u1_conflict": 0.95,
+            "u2_mismatch": 0.95,
+            "n1_goal_loss_if_ignored": 0.95,
+            "n2_commitment_carry_cost": 0.95,
+            "a1_institutional_level": 0.1,
+            "a2_current_anchor_strength": 0.1,
+            "p1_dependency_fanout": 0.1,
+            "p2_rollback_cost": 0.1
+          }
+        },
+        "explicit": {
+          "a1_institutional_level": 0.1,
+          "a2_current_anchor_strength": 0.1,
+          "p1_dependency_fanout": 0.1,
+          "p2_rollback_cost": 0.1,
+          "evidence_open": true,
+          "constitution_open": true,
+          "log_ready": true
+        },
+        "revision_requests": [
+          {
+            "candidate_id": "c_revision_anchor",
+            "reason": "later evidence requests audit-only reconsideration",
+            "disturbance_observed": 0.05,
+            "stability_observed": 0.95,
+            "evidence_open": true,
+            "constitution_open": true,
+            "log_ready": true,
+            "approval_open": false,
+            "target_version": 1
+          }
+        ]
+      },
+      {
+        "proposal_origin": "sequence_fixture",
+        "model_json": {
+          "proposal_id": "p_revision_anchor_2",
+          "candidate_id": "c_revision_anchor",
+          "candidate_summary": "later low pressure observation must not rewrite acknowledged candidate",
+          "proxy": {
+            "u1_conflict": 0.05,
+            "u2_mismatch": 0.05,
+            "n1_goal_loss_if_ignored": 0.05,
+            "n2_commitment_carry_cost": 0.05,
+            "a1_institutional_level": 0.9,
+            "a2_current_anchor_strength": 0.9,
+            "p1_dependency_fanout": 0.9,
+            "p2_rollback_cost": 0.9
+          }
+        },
+        "explicit": {
+          "a1_institutional_level": 0.9,
+          "a2_current_anchor_strength": 0.9,
+          "p1_dependency_fanout": 0.9,
+          "p2_rollback_cost": 0.9,
+          "evidence_open": false,
+          "constitution_open": false,
+          "log_ready": false
+        }
+      }
+    ]
+  },
+  {
+    "case_id": "approved_revision_request_remains_audit_only",
+    "candidate_id": "c_revision_approved",
+    "expected_committed": true,
+    "expected_commit_count": 1,
+    "expected_revision_count": 1,
+    "expected_final_phase": "acknowledged",
+    "steps": [
+      {
+        "proposal_origin": "sequence_fixture",
+        "model_json": {
+          "proposal_id": "p_revision_approved_1",
+          "candidate_id": "c_revision_approved",
+          "candidate_summary": "candidate is acknowledged before approved revision request",
+          "proxy": {
+            "u1_conflict": 0.95,
+            "u2_mismatch": 0.95,
+            "n1_goal_loss_if_ignored": 0.95,
+            "n2_commitment_carry_cost": 0.95,
+            "a1_institutional_level": 0.1,
+            "a2_current_anchor_strength": 0.1,
+            "p1_dependency_fanout": 0.1,
+            "p2_rollback_cost": 0.1
+          }
+        },
+        "explicit": {
+          "a1_institutional_level": 0.1,
+          "a2_current_anchor_strength": 0.1,
+          "p1_dependency_fanout": 0.1,
+          "p2_rollback_cost": 0.1,
+          "evidence_open": true,
+          "constitution_open": true,
+          "log_ready": true
+        },
+        "revision_requests": [
+          {
+            "candidate_id": "c_revision_approved",
+            "reason": "approval gate opened but execution protocol is not active",
+            "disturbance_observed": 0.02,
+            "stability_observed": 0.98,
+            "evidence_open": true,
+            "constitution_open": true,
+            "log_ready": true,
+            "approval_open": true,
+            "target_version": 1
+          }
+        ],
+        "revision_execution_drafts": [
+          {
+            "candidate_id": "c_revision_approved",
+            "target_version": 1
+          }
+        ]
+      },
+      {
+        "proposal_origin": "sequence_fixture",
+        "model_json": {
+          "proposal_id": "p_revision_approved_2",
+          "candidate_id": "c_revision_approved",
+          "candidate_summary": "post-approval observation must not create version two",
+          "proxy": {
+            "u1_conflict": 0.02,
+            "u2_mismatch": 0.02,
+            "n1_goal_loss_if_ignored": 0.02,
+            "n2_commitment_carry_cost": 0.02,
+            "a1_institutional_level": 0.95,
+            "a2_current_anchor_strength": 0.95,
+            "p1_dependency_fanout": 0.95,
+            "p2_rollback_cost": 0.95
+          }
+        },
+        "explicit": {
+          "a1_institutional_level": 0.95,
+          "a2_current_anchor_strength": 0.95,
+          "p1_dependency_fanout": 0.95,
+          "p2_rollback_cost": 0.95,
+          "evidence_open": true,
+          "constitution_open": true,
+          "log_ready": true
+        }
+      }
+    ]
+  }
+]

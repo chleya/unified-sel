@@ -75,3 +75,87 @@ def summarize_runs(runs: List[Dict], key: str = "accuracy") -> Dict:
         "max": float(np.max(values)),
         "n": len(values),
     }
+
+
+def get_seed_cache_path(experiment_name: str, seed: int, cache_prefix: str | None = None) -> Path:
+    """
+    返回种子缓存文件的路径。
+    
+    参数：
+        experiment_name: 实验名称
+        seed: 种子编号
+        cache_prefix: 缓存前缀，用于区分不同的实验配置，
+                     不传则只按种子缓存，传入则可以区分不同配置的同种子缓存
+    
+    返回：
+        缓存文件的完整路径
+    """
+    cache_dir = get_results_path(experiment_name) / "cache"
+    cache_dir.mkdir(parents=True, exist_ok=True)
+    
+    if cache_prefix:
+        return cache_dir / f"{cache_prefix}_seed_{seed}.json"
+    return cache_dir / f"seed_{seed}.json"
+
+
+def load_seed_cache(experiment_name: str, seed: int, cache_prefix: str | None = None) -> Dict | None:
+    """
+    加载种子缓存结果。
+    
+    参数：
+        experiment_name: 实验名称
+        seed: 种子编号
+        cache_prefix: 缓存前缀
+    
+    返回：
+        缓存结果字典，或 None（缓存不存在）
+    """
+    cache_path = get_seed_cache_path(experiment_name, seed, cache_prefix)
+    if cache_path.exists():
+        try:
+            return load_json(cache_path)
+        except Exception:
+            return None
+    return None
+
+
+def save_seed_cache(data: Dict, experiment_name: str, seed: int, cache_prefix: str | None = None) -> None:
+    """
+    保存种子缓存结果。
+    
+    参数：
+        data: 要保存的结果字典
+        experiment_name: 实验名称
+        seed: 种子编号
+        cache_prefix: 缓存前缀
+    """
+    cache_path = get_seed_cache_path(experiment_name, seed, cache_prefix)
+    save_json(data, cache_path)
+
+
+def clear_expired_seed_cache(experiment_name: str, max_age_days: int = 7) -> int:
+    """
+    清理过期的种子缓存。
+    
+    参数：
+        experiment_name: 实验名称
+        max_age_days: 最大缓存天数
+    
+    返回：
+        清理的缓存文件数量
+    """
+    import time
+    cache_dir = get_results_path(experiment_name) / "cache"
+    if not cache_dir.exists():
+        return 0
+    
+    cleaned_count = 0
+    current_time = time.time()
+    max_age_seconds = max_age_days * 86400
+    
+    for cache_file in cache_dir.glob("*.json"):
+        if current_time - cache_file.stat().st_mtime > max_age_seconds:
+            cache_file.unlink()
+            cleaned_count += 1
+    
+    return cleaned_count
